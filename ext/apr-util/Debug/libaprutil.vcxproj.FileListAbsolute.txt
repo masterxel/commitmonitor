@@ -1,0 +1,3 @@
+C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr-util\Debug\libaprutil.lib
+C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr-util\Debug\libaprutil.pdb
+C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr-util\Debug_Win32\libaprutil.pdb

@@ -1,0 +1,54 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(477,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+  Creating apu.h from apu.hw
+  apr_brigade.c
+  apr_buckets.c
+  apr_buckets_alloc.c
+  apr_buckets_eos.c
+  apr_buckets_file.c
+  apr_buckets_flush.c
+  apr_buckets_heap.c
+  apr_buckets_mmap.c
+  apr_buckets_pipe.c
+  apr_buckets_pool.c
+  apr_buckets_refcount.c
+  apr_buckets_simple.c
+  apr_buckets_socket.c
+  apr_crypto.c
+  apr_md4.c
+  apr_md5.c
+  apr_passwd.c
+  apr_sha1.c
+  crypt_blowfish.c
+C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr-util\crypto\crypt_blowfish.c(894,30): warning C4244: '=': conversion from 'unsigned long' to 'char', possible loss of data
+  getuuid.c
+  Generating Code...
+  Compiling...
+  uuid.c
+  apr_dbd.c
+  apr_dbm.c
+  apr_dbm_sdbm.c
+  sdbm.c
+  sdbm_hash.c
+  sdbm_lock.c
+  sdbm_pair.c
+  apr_base64.c
+  apr_hooks.c
+  apr_ldap_stub.c
+  apr_ldap_url.c
+  apr_memcache.c
+  apr_date.c
+  apr_queue.c
+  apr_reslist.c
+  apr_rmm.c
+  apr_thread_pool.c
+  apu_dso.c
+  apu_version.c
+  Generating Code...
+  Compiling...
+  apr_strmatch.c
+  apr_uri.c
+  xlate.c
+  apr_xml.c
+  Generating Code...
+  libaprutil.vcxproj -> C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr-util\Debug_Win32\libaprutil.lib
+  Embed .manifest

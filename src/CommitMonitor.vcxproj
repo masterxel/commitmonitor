@@ -80,7 +80,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\Resources;..\ext\sktoolslib;..\ext\apr\include;..\ext\Subversion\Subversion\include;..\ext\apr-util\include;..\ext\scintilla\include;..\ext\cyrus-sasl\include;..\ext\snarl;..\ext\BlowFish</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\Resources;..\ext\sktoolslib;..\ext\apr\include;..\ext\Subversion\Subversion\include;..\ext\apr-util\include;..\ext\scintilla\include;..\ext\cyrus-sasl\include;..\ext\snarl;..\ext\BlowFish;$(WindowsSDK_IncludePath)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <MinimalRebuild>true</MinimalRebuild>
