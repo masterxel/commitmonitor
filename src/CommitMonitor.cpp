@@ -34,6 +34,8 @@
 #define LIBSASL_EXPORTS         /* sasl defaults to dllimport if LIBSASL_EXPORTS is not defined */
 #include "sasl.h"
 
+#include <locale.h>
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 HANDLE g_mutex = 0;
