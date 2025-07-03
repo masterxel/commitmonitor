@@ -1,0 +1,1 @@
+UPX (https://upx.github.io/) is licensed under the GPL as well.

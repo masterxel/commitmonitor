@@ -1,0 +1,5 @@
+# who-is-who.txt
+# author to alias mapping for CommitMonitor
+# line syntax: author=alias
+# example:
+myname=myrealname
