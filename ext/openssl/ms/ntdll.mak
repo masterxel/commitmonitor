@@ -199,6 +199,8 @@ E_OBJ=$(OBJ_D)\verify.obj \
 	$(OBJ_D)\ocsp.obj $(OBJ_D)\prime.obj $(OBJ_D)\ts.obj \
 	$(OBJ_D)\srp.obj $(OBJ_D)\openssl.obj 
 
+GOSTOBJ=
+
 SSLOBJ=$(OBJ_D)\s2_meth.obj \
 	$(OBJ_D)\s2_srvr.obj $(OBJ_D)\s2_clnt.obj $(OBJ_D)\s2_lib.obj \
 	$(OBJ_D)\s2_enc.obj $(OBJ_D)\s2_pkt.obj $(OBJ_D)\s3_meth.obj \
@@ -415,8 +417,6 @@ CRYPTOOBJ=$(OBJ_D)\cryptlib.obj \
 	$(OBJ_D)\ts_rsp_verify.obj $(OBJ_D)\ts_verify_ctx.obj $(OBJ_D)\ts_lib.obj \
 	$(OBJ_D)\ts_conf.obj $(OBJ_D)\ts_asn1.obj $(OBJ_D)\srp_lib.obj \
 	$(OBJ_D)\srp_vfy.obj $(OBJ_D)\$(CRYPTO).res 
-
-GOSTOBJ=
 
 T_EXE=$(TEST_D)\constant_time_test.exe \
 	$(TEST_D)\md4test.exe $(TEST_D)\md5test.exe $(TEST_D)\shatest.exe \
@@ -3395,7 +3395,7 @@ $(TEST_D)\igetest.exe: $(OBJ_D)\igetest.obj $(LIBS_DEP)
 	IF EXIST $@.manifest mt -nologo -manifest $@.manifest -outputresource:$@;1
 
 $(OBJ_D)\e_4758cca.obj: $(SRC_D)\engines\e_4758cca.c
-	$(CC) /Fo$(OBJ_D)\e_4758cca.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_4758cca.c
+	$(CC) /Fo$(OBJ_D)\e_4758cca.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_4758cca.c
 
 $(ENG_D)\4758cca.dll: $(OBJ_D)\e_4758cca.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\4758cca.dll  @<<
@@ -3405,7 +3405,7 @@ $(ENG_D)\4758cca.dll: $(OBJ_D)\e_4758cca.obj
 
 
 $(OBJ_D)\e_aep.obj: $(SRC_D)\engines\e_aep.c
-	$(CC) /Fo$(OBJ_D)\e_aep.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_aep.c
+	$(CC) /Fo$(OBJ_D)\e_aep.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_aep.c
 
 $(ENG_D)\aep.dll: $(OBJ_D)\e_aep.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\aep.dll  @<<
@@ -3415,7 +3415,7 @@ $(ENG_D)\aep.dll: $(OBJ_D)\e_aep.obj
 
 
 $(OBJ_D)\e_atalla.obj: $(SRC_D)\engines\e_atalla.c
-	$(CC) /Fo$(OBJ_D)\e_atalla.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_atalla.c
+	$(CC) /Fo$(OBJ_D)\e_atalla.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_atalla.c
 
 $(ENG_D)\atalla.dll: $(OBJ_D)\e_atalla.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\atalla.dll  @<<
@@ -3425,7 +3425,7 @@ $(ENG_D)\atalla.dll: $(OBJ_D)\e_atalla.obj
 
 
 $(OBJ_D)\e_cswift.obj: $(SRC_D)\engines\e_cswift.c
-	$(CC) /Fo$(OBJ_D)\e_cswift.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_cswift.c
+	$(CC) /Fo$(OBJ_D)\e_cswift.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_cswift.c
 
 $(ENG_D)\cswift.dll: $(OBJ_D)\e_cswift.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\cswift.dll  @<<
@@ -3435,7 +3435,7 @@ $(ENG_D)\cswift.dll: $(OBJ_D)\e_cswift.obj
 
 
 $(OBJ_D)\e_gmp.obj: $(SRC_D)\engines\e_gmp.c
-	$(CC) /Fo$(OBJ_D)\e_gmp.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_gmp.c
+	$(CC) /Fo$(OBJ_D)\e_gmp.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_gmp.c
 
 $(ENG_D)\gmp.dll: $(OBJ_D)\e_gmp.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\gmp.dll  @<<
@@ -3445,7 +3445,7 @@ $(ENG_D)\gmp.dll: $(OBJ_D)\e_gmp.obj
 
 
 $(OBJ_D)\e_chil.obj: $(SRC_D)\engines\e_chil.c
-	$(CC) /Fo$(OBJ_D)\e_chil.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_chil.c
+	$(CC) /Fo$(OBJ_D)\e_chil.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_chil.c
 
 $(ENG_D)\chil.dll: $(OBJ_D)\e_chil.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\chil.dll  @<<
@@ -3455,7 +3455,7 @@ $(ENG_D)\chil.dll: $(OBJ_D)\e_chil.obj
 
 
 $(OBJ_D)\e_nuron.obj: $(SRC_D)\engines\e_nuron.c
-	$(CC) /Fo$(OBJ_D)\e_nuron.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_nuron.c
+	$(CC) /Fo$(OBJ_D)\e_nuron.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_nuron.c
 
 $(ENG_D)\nuron.dll: $(OBJ_D)\e_nuron.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\nuron.dll  @<<
@@ -3465,7 +3465,7 @@ $(ENG_D)\nuron.dll: $(OBJ_D)\e_nuron.obj
 
 
 $(OBJ_D)\e_sureware.obj: $(SRC_D)\engines\e_sureware.c
-	$(CC) /Fo$(OBJ_D)\e_sureware.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_sureware.c
+	$(CC) /Fo$(OBJ_D)\e_sureware.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_sureware.c
 
 $(ENG_D)\sureware.dll: $(OBJ_D)\e_sureware.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\sureware.dll  @<<
@@ -3475,7 +3475,7 @@ $(ENG_D)\sureware.dll: $(OBJ_D)\e_sureware.obj
 
 
 $(OBJ_D)\e_ubsec.obj: $(SRC_D)\engines\e_ubsec.c
-	$(CC) /Fo$(OBJ_D)\e_ubsec.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_ubsec.c
+	$(CC) /Fo$(OBJ_D)\e_ubsec.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_ubsec.c
 
 $(ENG_D)\ubsec.dll: $(OBJ_D)\e_ubsec.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\ubsec.dll  @<<
@@ -3485,7 +3485,7 @@ $(ENG_D)\ubsec.dll: $(OBJ_D)\e_ubsec.obj
 
 
 $(OBJ_D)\e_padlock.obj: $(SRC_D)\engines\e_padlock.c
-	$(CC) /Fo$(OBJ_D)\e_padlock.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_padlock.c
+	$(CC) /Fo$(OBJ_D)\e_padlock.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_padlock.c
 
 $(ENG_D)\padlock.dll: $(OBJ_D)\e_padlock.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\padlock.dll  @<<
@@ -3495,7 +3495,7 @@ $(ENG_D)\padlock.dll: $(OBJ_D)\e_padlock.obj
 
 
 $(OBJ_D)\e_capi.obj: $(SRC_D)\engines\e_capi.c
-	$(CC) /Fo$(OBJ_D)\e_capi.obj  $(SHLIB_CFLAGS) -c $(SRC_D)\engines\e_capi.c
+	$(CC) /Fo$(OBJ_D)\e_capi.obj  $(SHLIB_CFLAGS) -DOPENSSL_BUILD_SHLIBCRYPTO -c $(SRC_D)\engines\e_capi.c
 
 $(ENG_D)\capi.dll: $(OBJ_D)\e_capi.obj
 	$(LINK_CMD) $(MLFLAGS) /out:$(ENG_D)\capi.dll  @<<
