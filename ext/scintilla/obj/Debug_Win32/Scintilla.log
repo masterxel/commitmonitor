@@ -1,0 +1,49 @@
+﻿cl : Command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  ScintillaWin.cxx
+  PlatWin.cxx
+  HanjaDic.cxx
+  XPM.cxx
+  ViewStyle.cxx
+  UniConversion.cxx
+  Style.cxx
+  Selection.cxx
+  ScintillaBase.cxx
+  RunStyles.cxx
+  RESearch.cxx
+  PositionCache.cxx
+  PerLine.cxx
+  MarginView.cxx
+  LineMarker.cxx
+  KeyMap.cxx
+  Indicator.cxx
+  ExternalLexer.cxx
+  EditView.cxx
+  Editor.cxx
+  Generating Code...
+  Compiling...
+  EditModel.cxx
+  Document.cxx
+  Decoration.cxx
+  ContractionState.cxx
+  CharClassify.cxx
+  CellBuffer.cxx
+  Catalogue.cxx
+  CaseFolder.cxx
+  CaseConvert.cxx
+  CallTip.cxx
+  AutoComplete.cxx
+  WordList.cxx
+  StyleContext.cxx
+  PropSetSimple.cxx
+  LexerSimple.cxx
+  LexerNoExceptions.cxx
+  LexerModule.cxx
+  LexerBase.cxx
+  CharacterSet.cxx
+  CharacterCategory.cxx
+  Generating Code...
+  Compiling...
+  Accessor.cxx
+  LexDiff.cxx
+  Generating Code...
+  Scintilla.vcxproj -> C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\scintilla\obj\Debug_Win32\Scintilla.lib

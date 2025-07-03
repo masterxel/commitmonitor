@@ -22,6 +22,7 @@
     <ProjectGuid>{920638BE-13B0-4A76-B132-B3E3A56DCB42}</ProjectGuid>
     <RootNamespace>CommitMonitor</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
