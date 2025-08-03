@@ -2485,6 +2485,11 @@ void CMainDlg::OnSelectListItem(LPNMLISTVIEW lpNMListView)
             {
                 msg = _T("multiple log entries selected. Info for the last selected one:\n-------------------------------\n\n");
             }
+            if (!pLogEntry->commitHash.empty())
+            {
+                _stprintf_s(buf, _countof(buf), _T("SHA-1: %s\n\n"), pLogEntry->commitHash.c_str());
+                msg += std::wstring(buf);
+            }
             msg += pLogEntry->message.c_str();
             msg += _T("\n\n-------------------------------\n");
             // now add all changed paths, one path per line
