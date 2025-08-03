@@ -8,3 +8,17 @@
 /ext/apr-util/Release
 /ext/apr/Release
 /ext/scintilla/obj
+/ext/apr-util/x64/Release
+/ext/apr/release_win32
+/ext/apr/Debug
+/ext/apr/Debug_Win32
+/ext/subversion/debug_win32
+/ext/subversion/release_win32
+/ext/cyrus-sasl/debug_win32
+/ext/cyrus-sasl/release_win32
+/ext/serf/release_win32
+/ext/serf/debug_win32
+/ext/gssapi/debug_win32
+/ext/gssapi/release_win32
+/ext/sqlite/debug_win32
+/ext/sqlite/release_win32
