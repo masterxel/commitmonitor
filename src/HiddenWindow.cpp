@@ -830,11 +830,66 @@ DWORD CHiddenWindow::RunThread()
                             for (const auto& entry : newCommits) {
                                 // Only add if we don't already have this commit
                                 if (writeIt->second.logentries.find(entry.commitHash) == writeIt->second.logentries.end()) {
+                                    bool bIgnore = false;
+                                    std::wstring author1 = entry.author;
+                                    std::transform(author1.begin(), author1.end(), author1.begin(), ::towlower);
+                                    authors.insert(author1);
+
+                                    // Check includeUsers list
+                                    if (!writeIt->second.includeUsers.empty()) {
+                                        std::wstring s1 = writeIt->second.includeUsers;
+                                        std::transform(s1.begin(), s1.end(), s1.begin(), ::towlower);
+                                        CAppUtils::SearchReplace(s1, _T("\r\n"), _T("\n"));
+                                        std::vector<std::wstring> includeVector = CAppUtils::tokenize_str(s1, _T("\n"));
+                                        bool bInclude = false;
+                                        for (auto inclIt = includeVector.begin(); inclIt != includeVector.end(); ++inclIt) {
+                                            if (author1.compare(*inclIt) == 0) {
+                                                bInclude = true;
+                                                break;
+                                            }
+                                        }
+                                        bIgnore = !bInclude;
+                                    }
+
+                                    // Check ignoreUsers list
+                                    if (!writeIt->second.ignoreUsers.empty()) {
+                                        std::wstring s1 = writeIt->second.ignoreUsers;
+                                        std::transform(s1.begin(), s1.end(), s1.begin(), ::towlower);
+                                        CAppUtils::SearchReplace(s1, _T("\r\n"), _T("\n"));
+                                        std::vector<std::wstring> ignoreVector = CAppUtils::tokenize_str(s1, _T("\n"));
+                                        for (auto ignoreIt = ignoreVector.begin(); ignoreIt != ignoreVector.end(); ++ignoreIt) {
+                                            if (author1.compare(*ignoreIt) == 0) {
+                                                bIgnore = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Check ignoreCommitLog regex
+                                    if (!writeIt->second.ignoreCommitLog.empty()) {
+                                        try {
+                                            const std::wregex ignex(writeIt->second.ignoreCommitLog.c_str(), 
+                                                std::regex_constants::icase | std::regex_constants::ECMAScript);
+                                            if (std::regex_search(entry.message.begin(), entry.message.end(), 
+                                                ignex, std::regex_constants::match_default)) {
+                                                bIgnore = true;
+                                            }
+                                        }
+                                        catch (std::exception) {
+                                            // Invalid regex pattern - ignore the error
+                                        }
+                                    }
+
+                                    // Add the commit and update counters
                                     auto& newEntry = writeIt->second.logentries[entry.commitHash] = entry;
-                                    newEntry.read = false; // Mark new commits as unread
-                                    bNewEntries = true; // Signal that we have new entries
-                                    nTotalNewCommits++; // Increment total count
-                                    nNewCommits++; // Increment non-ignored count
+                                    nTotalNewCommits++; // Always increment total
+                                    if (!bIgnore) {
+                                        newEntry.read = false; // Mark as unread only if not ignored
+                                        bNewEntries = true; // Signal that we have new entries
+                                        nNewCommits++; // Increment non-ignored count
+                                    } else {
+                                        newEntry.read = true; // Mark ignored commits as read
+                                    }
                                 }
                             }
                         }
