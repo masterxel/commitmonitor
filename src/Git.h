@@ -29,6 +29,7 @@ public:
     bool GetCommit(const std::wstring& repoPath, const std::wstring& commitHash, SCCSLogEntry& entry);
 
 private:
+    bool RunGitCommand(const std::wstring& cmd, std::wstring& output);
     std::wstring m_username;
     std::wstring m_password;
     std::wstring m_lastError;

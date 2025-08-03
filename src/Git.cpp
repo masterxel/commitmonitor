@@ -24,20 +24,15 @@ std::wstring Git::GetRootUrl(const std::wstring& path) {
     // For Git, we'll return the repository root path
     std::wstringstream cmd;
     cmd << L"git -C \"" << path << L"\" rev-parse --show-toplevel";
-    FILE* pipe = _wpopen(cmd.str().c_str(), L"rt");
-    if (!pipe) return L"";
-    wchar_t buffer[4096];
-    if (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe)) {
-        std::wstring rootPath(buffer);
-        // Remove trailing newline
-        if (!rootPath.empty() && rootPath[rootPath.length()-1] == L'\n') {
-            rootPath.erase(rootPath.length()-1);
-        }
-        _pclose(pipe);
-        return rootPath;
+    std::wstring output;
+    if (!RunGitCommand(cmd.str(), output))
+        return L"";
+
+    // Remove trailing newline
+    if (!output.empty() && output[output.length()-1] == L'\n') {
+        output.erase(output.length()-1);
     }
-    _pclose(pipe);
-    return L"";
+    return output;
 }
 
 size_t Git::GetFileCount() {
@@ -74,26 +69,76 @@ bool Git::Diff(const std::wstring& url1, svn_revnum_t pegrevision, svn_revnum_t 
     }
     cmd << revision1 << L".." << revision2;
 
-    // Open output file
+    std::wstring output;
+    if (!RunGitCommand(cmd.str(), output))
+        return false;
+
+    // Open output file and write the results
     FILE* outFile = _wfopen(outputfile.c_str(), bAppend ? L"a" : L"w");
     if (!outFile) return false;
 
-    // Run git command and capture output
-    FILE* pipe = _wpopen(cmd.str().c_str(), L"rt");
-    if (!pipe) {
-        fclose(outFile);
+    fputws(output.c_str(), outFile);
+    fclose(outFile);
+    return true;
+}
+
+bool Git::RunGitCommand(const std::wstring& cmd, std::wstring& output) {
+    SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+    HANDLE hReadPipe = NULL, hWritePipe = NULL;
+    if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) {
+        m_lastError = L"Failed to create pipe";
         return false;
     }
 
-    // Copy output to file
-    wchar_t buffer[4096];
-    while (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe)) {
-        fputws(buffer, outFile);
+    STARTUPINFO si = { sizeof(STARTUPINFO) };
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdOutput = hWritePipe;
+    si.hStdError = hWritePipe;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+
+    PROCESS_INFORMATION pi = { 0 };
+    std::wstring cmdLine = L"cmd.exe /c " + cmd;
+
+    BOOL success = CreateProcessW(NULL, (LPWSTR)cmdLine.c_str(),
+        NULL, NULL, TRUE, CREATE_NO_WINDOW,
+        NULL, NULL, &si, &pi);
+
+    if (!success) {
+        m_lastError = L"Failed to create process";
+        CloseHandle(hReadPipe);
+        CloseHandle(hWritePipe);
+        return false;
     }
-    
-    _pclose(pipe);
-    fclose(outFile);
-    return true;
+
+    CloseHandle(hWritePipe); // Close write end of pipe to get EOF when process completes
+
+    // Read output
+    char buffer[4096];
+    DWORD bytesRead;
+    std::string result;
+
+    while (ReadFile(hReadPipe, buffer, sizeof(buffer)-1, &bytesRead, NULL) && bytesRead > 0) {
+        buffer[bytesRead] = 0;
+        result += buffer;
+    }
+
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD exitCode;
+    GetExitCodeProcess(pi.hProcess, &exitCode);
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    CloseHandle(hReadPipe);
+
+    // Convert result to wide string
+    int size = MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, NULL, 0);
+    if (size > 0) {
+        std::vector<wchar_t> buf(size);
+        MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, &buf[0], size);
+        output = &buf[0];
+    }
+
+    return exitCode == 0;
 }
 
 std::wstring Git::GetLastErrorMsg() {
@@ -106,12 +151,11 @@ void Git::SetAndClearProgressInfo(CProgressDlg* pProgressDlg, bool bShowProgress
 
 bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, std::vector<SCCSLogEntry>& logEntries, int maxCount) {
     // Check if Git is available
-    FILE* testPipe = _wpopen(L"git --version", L"r");
-    if (!testPipe) {
+    std::wstring output;
+    if (!RunGitCommand(L"git --version", output)) {
         m_lastError = L"Git is not available in PATH";
         return false;
     }
-    _pclose(testPipe);
 
     // Use git CLI to get log
     std::wstringstream cmd;
@@ -119,27 +163,20 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
     // Fetch all first to ensure we have latest changes
     std::wstringstream fetchCmd;
     fetchCmd << L"git -C \"" << repoPath << L"\" fetch --all";
-    FILE* fetchPipe = _wpopen(fetchCmd.str().c_str(), L"r");
-    if (fetchPipe) _pclose(fetchPipe);
+    RunGitCommand(fetchCmd.str(), output); // Ignore fetch errors
 
-    cmd << L"set PYTHONIOENCODING=utf-8 && git -C \"" << repoPath << L"\" -c core.quotepath=off log " << branch << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
+    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << branch << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
 
-    // Open pipe in text mode for proper UTF-8 to UTF-16 conversion
-    FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
-    if (!pipe) {
+    std::wstring cmdOutput;
+    if (!RunGitCommand(cmd.str(), cmdOutput)) {
         m_lastError = L"Failed to execute Git command";
         return false;
     }
 
-    // Set the pipe to UTF-8 mode
-    _setmode(_fileno(pipe), _O_U8TEXT);
-
-    wchar_t buffer[4096];
-    bool hasEntries = false;
-
-    // Read output line by line, now properly handling UTF-8
-    while (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe)) {
-        std::wstring line(buffer);
+    // Process output line by line
+    std::wstringstream ss(cmdOutput);
+    std::wstring line;
+    while (std::getline(ss, line)) {
         // Trim newline characters
         while (!line.empty() && (line.back() == L'\n' || line.back() == L'\r')) {
             line.pop_back();
@@ -171,30 +208,15 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
         entry.message = line.substr(pos5+1);
         logEntries.push_back(entry);
     }
-    _pclose(pipe);
     return true;
 }
 
 bool Git::GetGitDiff(const std::wstring& repoPath, const std::wstring& commitHash, std::wstring& diffText) {
     std::wstringstream cmd;
     // Force UTF-8 output and disable path quoting
-    cmd << L"set PYTHONIOENCODING=utf-8 && git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format: --no-color";
-    FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
-    if (!pipe) {
-        m_lastError = L"Failed to execute Git diff command";
-        return false;
-    }
+    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format: --no-color";
     
-    // Set the pipe to UTF-8 mode
-    _setmode(_fileno(pipe), _O_U8TEXT);
-    
-    wchar_t buffer[4096];
-    diffText.clear();
-    while (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe)) {
-        diffText += buffer;
-    }
-    int status = _pclose(pipe);
-    if (status != 0) {
+    if (!RunGitCommand(cmd.str(), diffText)) {
         m_lastError = L"Git diff command failed";
         return false;
     }
@@ -204,19 +226,21 @@ bool Git::GetGitDiff(const std::wstring& repoPath, const std::wstring& commitHas
 bool Git::GetCommit(const std::wstring& repoPath, const std::wstring& commitHash, SCCSLogEntry& entry) {
     std::wstringstream cmd;
     // Force UTF-8 output and disable path quoting
-    cmd << L"set PYTHONIOENCODING=utf-8 && git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format:\"%H|%P|%an|%at|%s\" --no-patch";
-    FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
-    if (!pipe) {
+    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format:\"%H|%P|%an|%at|%s\" --no-patch";
+    
+    std::wstring output;
+    if (!RunGitCommand(cmd.str(), output)) {
         m_lastError = L"Failed to execute Git show command";
         return false;
     }
-
-    // Set the pipe to UTF-8 mode
-    _setmode(_fileno(pipe), _O_U8TEXT);
     
-    wchar_t buffer[4096];
-    if (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe)) {
-        std::wstring line(buffer);
+    std::wstring line = output;
+    // Trim newline characters
+    while (!line.empty() && (line.back() == L'\n' || line.back() == L'\r')) {
+        line.pop_back();
+    }
+    
+    if (!line.empty()) {
         // Trim newline characters
         while (!line.empty() && (line.back() == L'\n' || line.back() == L'\r')) {
             line.pop_back();
@@ -235,6 +259,5 @@ bool Git::GetCommit(const std::wstring& repoPath, const std::wstring& commitHash
         entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
         entry.message = line.substr(pos4+1);
     }
-    _pclose(pipe);
     return true;
 }
