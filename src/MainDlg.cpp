@@ -2188,8 +2188,8 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
         
         // For Git repositories, sort by date by default (descending order)
         if (info && info->sccs == CUrlInfo::SCCS_GIT) {
-            // Sort by date descending (0x8001 = column 1 | 0x8000 to indicate descending)
-            ListView_SortItems(m_hListControl, &CompareFunc, 0x8001);
+            // Sort by date descending (column 1)
+            ListView_SortItems(m_hListControl, &CompareFunc, 0x0001);
             // Update the header sort indicator
             HWND hHeader = ListView_GetHeader(m_hListControl);
             HDITEM header = {0};
