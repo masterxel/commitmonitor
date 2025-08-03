@@ -833,6 +833,8 @@ DWORD CHiddenWindow::RunThread()
                                     auto& newEntry = writeIt->second.logentries[entry.commitHash] = entry;
                                     newEntry.read = false; // Mark new commits as unread
                                     bNewEntries = true; // Signal that we have new entries
+                                    nTotalNewCommits++; // Increment total count
+                                    nNewCommits++; // Increment non-ignored count
                                 }
                             }
                         }
