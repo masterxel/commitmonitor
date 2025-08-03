@@ -22,3 +22,12 @@
 /ext/gssapi/release_win32
 /ext/sqlite/debug_win32
 /ext/sqlite/release_win32
+/ext/apr-util/Debug_Win32
+/ext/apr-util/release_win32
+/ext/zlib/release_win32
+/ext/zlib/debug_win32
+/ext/openssl/out32
+/ext/openssl/out32.dbg
+/ext/openssl/tmp32
+/ext/openssl/tmp32.dbg
+/ext/apr/x64/Release
