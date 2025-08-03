@@ -116,7 +116,13 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
     // Use git CLI to get log
     std::wstringstream cmd;
     // Force Git to use UTF-8 output
-    cmd << L"set PYTHONIOENCODING=utf-8 && git -C \"" << repoPath << L"\" -c core.quotepath=off log " << branch << L" --pretty=format:\"%H|%P|%an|%at|%s\" -n " << maxCount;
+    // Fetch all first to ensure we have latest changes
+    std::wstringstream fetchCmd;
+    fetchCmd << L"git -C \"" << repoPath << L"\" fetch --all";
+    FILE* fetchPipe = _wpopen(fetchCmd.str().c_str(), L"r");
+    if (fetchPipe) _pclose(fetchPipe);
+
+    cmd << L"set PYTHONIOENCODING=utf-8 && git -C \"" << repoPath << L"\" -c core.quotepath=off log " << branch << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
 
     // Open pipe in text mode for proper UTF-8 to UTF-16 conversion
     FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
@@ -143,22 +149,26 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
 
         size_t pos = 0;
         SCCSLogEntry entry;
-        // Parse: %H|%P|%an|%at|%s
+        // Parse: %h|%H|%P|%an|%at|%s
         pos = line.find(L"|");
         if (pos == std::wstring::npos) continue;  // Invalid format, skip line
         
-        entry.commitHash = line.substr(0, pos);
+        entry.shortHash = line.substr(0, pos);  // Store short hash
         size_t pos2 = line.find(L"|", pos+1);
         if (pos2 == std::wstring::npos) continue;  // Invalid format, skip line
         
-        entry.parentHashes.push_back(line.substr(pos+1, pos2-pos-1));
+        entry.commitHash = line.substr(pos+1, pos2-pos-1);  // Store full hash
         size_t pos3 = line.find(L"|", pos2+1);
-        entry.author = line.substr(pos2+1, pos3-pos2-1);
+        if (pos3 == std::wstring::npos) continue;  // Invalid format, skip line
+        
+        entry.parentHashes.push_back(line.substr(pos2+1, pos3-pos2-1));
         size_t pos4 = line.find(L"|", pos3+1);
+        entry.author = line.substr(pos3+1, pos4-pos3-1);
+        size_t pos5 = line.find(L"|", pos4+1);
         // Convert Unix timestamp to APR time (microseconds since epoch)
-        apr_time_t unixTime = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
+        apr_time_t unixTime = _wtoi64(line.substr(pos4+1, pos5-pos4-1).c_str());
         entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
-        entry.message = line.substr(pos4+1);
+        entry.message = line.substr(pos5+1);
         logEntries.push_back(entry);
     }
     _pclose(pipe);

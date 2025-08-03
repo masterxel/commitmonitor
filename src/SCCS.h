@@ -215,6 +215,7 @@ public:
     std::wstring        message;
     std::map<std::wstring, SCCSLogChangedPaths>   m_changedPaths;
     // Git-specific fields
+    std::wstring        shortHash;  // Short Git commit hash (for display)
     std::wstring        commitHash; // Git commit hash
     std::vector<std::wstring> parentHashes; // Parent commit hashes (for merge commits)
     std::wstring        diff; // Diff text (optional)
@@ -232,6 +233,8 @@ public:
         if (!CSerializeUtils::SaveString(hFile, message))
             return false;
         // Git fields
+        if (!CSerializeUtils::SaveString(hFile, shortHash))
+            return false;
         if (!CSerializeUtils::SaveString(hFile, commitHash))
             return false;
         if (!CSerializeUtils::SaveNumber(hFile, parentHashes.size()))
@@ -274,6 +277,8 @@ public:
         if (!CSerializeUtils::LoadString(hFile, message))
             return false;
         // Git fields
+        if (!CSerializeUtils::LoadString(hFile, shortHash))
+            return false;
         if (!CSerializeUtils::LoadString(hFile, commitHash))
             return false;
         parentHashes.clear();
@@ -329,6 +334,8 @@ public:
         if (!CSerializeUtils::LoadString(buf, message))
             return false;
         // Git fields
+        if (!CSerializeUtils::LoadString(buf, shortHash))
+            return false;
         if (!CSerializeUtils::LoadString(buf, commitHash))
             return false;
         parentHashes.clear();

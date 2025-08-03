@@ -37,6 +37,7 @@
 #include <cctype>
 #include <regex>
 #include <VersionHelpers.h>
+#include <sstream>
 #include <fstream>
 
 #pragma comment(lib, "uxtheme.lib")
@@ -2104,7 +2105,7 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
             }
             // set revision or commit hash
             if (info->sccs == CUrlInfo::SCCS_GIT) {
-                wcsncpy(buf, it->second.commitHash.c_str(), _countof(buf));
+                wcsncpy(buf, it->second.shortHash.c_str(), _countof(buf));
                 buf[_countof(buf)-1] = 0;
                 item.pszText = buf;
                 item.iSubItem = 0;
@@ -2184,6 +2185,20 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
         m_bBlockListCtrlUI = false;
         for (int column = 0; column <= (m_aliases.empty() ? 3 : 4); ++column)
             ListView_SetColumnWidth(m_hListControl, column, LVSCW_AUTOSIZE_USEHEADER);
+        
+        // For Git repositories, sort by date by default (descending order)
+        if (info && info->sccs == CUrlInfo::SCCS_GIT) {
+            // Sort by date descending (0x8001 = column 1 | 0x8000 to indicate descending)
+            ListView_SortItems(m_hListControl, &CompareFunc, 0x8001);
+            // Update the header sort indicator
+            HWND hHeader = ListView_GetHeader(m_hListControl);
+            HDITEM header = {0};
+            header.mask = HDI_FORMAT;
+            Header_GetItem(hHeader, 1, &header);
+            header.fmt |= HDF_SORTDOWN;
+            header.fmt &= ~HDF_SORTUP;
+            Header_SetItem(hHeader, 1, &header);
+        }
         
         if (bScrollToLastUnread)
             ListView_EnsureVisible(m_hListControl, iLastUnread-1, FALSE);
@@ -2345,12 +2360,41 @@ void CMainDlg::OnSelectListItem(LPNMLISTVIEW lpNMListView)
         SCCSLogEntry * pLogEntry = (SCCSLogEntry*)item.lParam;
         if (pLogEntry)
         {
+            // If this is a Git commit, fetch the changed files
             HTREEITEM hSelectedItem = TreeView_GetSelection(m_hTreeControl);
-            // get the url this entry refers to
             TVITEMEX itemex = {0};
             itemex.hItem = hSelectedItem;
             itemex.mask = TVIF_PARAM;
             TreeView_GetItem(m_hTreeControl, &itemex);
+            if (itemex.lParam != 0 && pRead->find(*(std::wstring*)itemex.lParam) != pRead->end())
+            {
+                const CUrlInfo* info = &pRead->find(*(std::wstring*)itemex.lParam)->second;
+                if (info->sccs == CUrlInfo::SCCS_GIT && lpNMListView->uNewState & LVIS_SELECTED)
+                {
+                    // Run git show to get changed files
+                    std::wstringstream cmd;
+                    cmd << L"git -C \"" << info->gitRepoPath << L"\" show --name-status --format=\"\" " << pLogEntry->commitHash;
+                    
+                    FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
+                    if (pipe)
+                    {
+                        std::wstring changes;
+                        wchar_t buffer[4096];
+                        // Set the pipe to UTF-8 mode
+                        _setmode(_fileno(pipe), _O_U8TEXT);
+                        while (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe))
+                        {
+                            changes += buffer;
+                        }
+                        _pclose(pipe);
+                        
+                        // Set the file list in the message window
+                        SetDlgItemText(*this, IDC_LOGINFO, changes.c_str());
+                    }
+                }
+            }
+
+            // get the url this entry refers to
             if (itemex.lParam == 0)
             {
                 m_pURLInfos->ReleaseReadOnlyData();
@@ -3554,8 +3598,11 @@ int CALLBACK CMainDlg::CompareFunc( LPARAM lParam1, LPARAM lParam2, LPARAM lPara
     int ret = 0;
     switch (col)
     {
-    case 0: // revision
-        ret = pLogEntry1->revision - pLogEntry2->revision;
+    case 0: // revision or commit hash
+        if (pLogEntry1->commitHash.empty() && pLogEntry2->commitHash.empty())
+            ret = pLogEntry1->revision - pLogEntry2->revision;  // SVN mode
+        else
+            ret = pLogEntry1->commitHash.compare(pLogEntry2->commitHash);  // Git mode
         break;
     case 1: // date
         if (pLogEntry1->date < pLogEntry2->date)
