@@ -195,8 +195,10 @@ private:
     // Unicode output helper
     void TraceV(PCWSTR pszFormat, va_list args)
     {
-        wchar_t szBuffer[1024];
-        _vsnwprintf_s(szBuffer, _countof(szBuffer), pszFormat, args);
+        int length = _vsnwprintf(nullptr, 0, pszFormat, args);
+        size_t size = length + 1;
+        wchar_t* szBuffer = (wchar_t*)alloca(size * sizeof(wchar_t));
+        _vsnwprintf_s(szBuffer, size, length, pszFormat, args);
         OutputDebugStringW(szBuffer);
         if (m_fi)
             fputws(szBuffer, m_fi);

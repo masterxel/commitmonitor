@@ -83,6 +83,8 @@ bool Git::Diff(const std::wstring& url1, svn_revnum_t pegrevision, svn_revnum_t 
 }
 
 bool Git::RunGitCommand(const std::wstring& cmd, std::wstring& output) {
+    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(" running Git command %s \n"), cmd.c_str());
+
     SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
     HANDLE hReadPipe = NULL, hWritePipe = NULL;
     if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) {
@@ -137,6 +139,8 @@ bool Git::RunGitCommand(const std::wstring& cmd, std::wstring& output) {
         MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, &buf[0], size);
         output = &buf[0];
     }
+
+    CTraceToOutputDebugString::Instance()(_T(__FUNCTION__) _T(" Git command output: %s \n"), output.substr(0, 1023).c_str());
 
     return exitCode == 0;
 }
