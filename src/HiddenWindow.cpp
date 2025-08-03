@@ -830,7 +830,9 @@ DWORD CHiddenWindow::RunThread()
                             for (const auto& entry : newCommits) {
                                 // Only add if we don't already have this commit
                                 if (writeIt->second.logentries.find(entry.commitHash) == writeIt->second.logentries.end()) {
-                                    writeIt->second.logentries[entry.commitHash] = entry;
+                                    auto& newEntry = writeIt->second.logentries[entry.commitHash] = entry;
+                                    newEntry.read = false; // Mark new commits as unread
+                                    bNewEntries = true; // Signal that we have new entries
                                 }
                             }
                         }
