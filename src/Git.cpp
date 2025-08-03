@@ -163,13 +163,43 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
 
     // Use git CLI to get log
     std::wstringstream cmd;
-    // Force Git to use UTF-8 output
-    // Fetch all first to ensure we have latest changes
+
+    // First get the remote tracking branch for the current or specified branch
+    std::wstring remoteBranch;
+    if (branch == L"HEAD" || branch.empty()) {
+        // Get the remote tracking branch for the current branch
+        std::wstringstream remoteCmd;
+        remoteCmd << L"git -C \"" << repoPath << L"\" rev-parse --abbrev-ref --symbolic-full-name @{u}";
+        if (!RunGitCommand(remoteCmd.str(), remoteBranch)) {
+            // If there's no tracking branch, fallback to origin/HEAD
+            remoteBranch = L"origin/HEAD";
+        }
+        // Trim any whitespace or newlines
+        while (!remoteBranch.empty() && (remoteBranch.back() == L'\n' || remoteBranch.back() == L'\r')) {
+            remoteBranch.pop_back();
+        }
+    } else {
+        // For specified branches, try to get their remote tracking branch
+        std::wstringstream remoteCmd;
+        remoteCmd << L"git -C \"" << repoPath << L"\" rev-parse --abbrev-ref --symbolic-full-name " << branch << "@{u}";
+        if (!RunGitCommand(remoteCmd.str(), remoteBranch)) {
+            // If there's no tracking branch, try origin/<branch>
+            remoteBranch = L"origin/" + branch;
+        }
+        // Trim any whitespace or newlines
+        while (!remoteBranch.empty() && (remoteBranch.back() == L'\n' || remoteBranch.back() == L'\r')) {
+            remoteBranch.pop_back();
+        }
+    }
+
+    // Fetch all remotes to ensure we have the latest changes
     std::wstringstream fetchCmd;
     fetchCmd << L"git -C \"" << repoPath << L"\" fetch --all";
     RunGitCommand(fetchCmd.str(), output); // Ignore fetch errors
 
-    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << branch << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
+    // Now get the log from the remote tracking branch
+    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << remoteBranch 
+        << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
 
     std::wstring cmdOutput;
     if (!RunGitCommand(cmd.str(), cmdOutput)) {
