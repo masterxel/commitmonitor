@@ -28,7 +28,7 @@ public:
     bool GetGitDiff(const std::wstring& repoPath, const std::wstring& commitHash, std::wstring& diffText);
     bool GetCommit(const std::wstring& repoPath, const std::wstring& commitHash, SCCSLogEntry& entry);
 
-private:
+public:
     bool RunGitCommand(const std::wstring& cmd, std::wstring& output);
     std::wstring m_username;
     std::wstring m_password;

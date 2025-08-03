@@ -24,6 +24,7 @@
 #include "UrlInfo.h"
 #include "AeroControls.h"
 #include "StringUtils.h"
+#include "Git.h"
 
 #define REPOBROWSER_CTRL_MIN_WIDTH 50
 #define REPOBROWSER_CTRL_MIN_HEIGHT 40
@@ -134,4 +135,6 @@ private:
 
     // key=author, value=alias
     std::map<std::wstring, std::wstring, ci_lessW> m_aliases;
+
+    Git m_git;  // Git instance for running commands
 };

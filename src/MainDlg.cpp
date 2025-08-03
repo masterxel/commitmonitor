@@ -2371,25 +2371,61 @@ void CMainDlg::OnSelectListItem(LPNMLISTVIEW lpNMListView)
                 const CUrlInfo* info = &pRead->find(*(std::wstring*)itemex.lParam)->second;
                 if (info->sccs == CUrlInfo::SCCS_GIT && lpNMListView->uNewState & LVIS_SELECTED)
                 {
-                    // Run git show to get changed files
-                    std::wstringstream cmd;
-                    cmd << L"git -C \"" << info->gitRepoPath << L"\" show --name-status --format=\"\" " << pLogEntry->commitHash;
-                    
-                    FILE* pipe = _wpopen(cmd.str().c_str(), L"r");
-                    if (pipe)
+                    if (pLogEntry->m_changedPaths.empty())
                     {
-                        std::wstring changes;
-                        wchar_t buffer[4096];
-                        // Set the pipe to UTF-8 mode
-                        _setmode(_fileno(pipe), _O_U8TEXT);
-                        while (fgetws(buffer, sizeof(buffer)/sizeof(wchar_t), pipe))
-                        {
-                            changes += buffer;
-                        }
-                        _pclose(pipe);
-                        
-                        // Set the file list in the message window
-                        SetDlgItemText(*this, IDC_LOGINFO, changes.c_str());
+						// Run git show to get changed files
+						std::wstringstream cmd;
+						cmd << L"git -C \"" << info->gitRepoPath << L"\" show --name-status --format=\"\" " << pLogEntry->commitHash;
+
+						std::wstring changes;
+						if (m_git.RunGitCommand(cmd.str(), changes))
+						{
+							// Parse each line of the changes output
+							std::wstringstream ss(changes);
+							std::wstring line;
+							while (std::getline(ss, line))
+							{
+								if (line.empty()) continue;
+
+								// Format is: <status><tab><file>
+								// Status can be: M (modified), A (added), D (deleted), R (renamed), C (copied)
+								wchar_t status = line[0];
+								size_t tabPos = line.find(L'\t');
+								if (tabPos == std::wstring::npos) continue;
+
+								std::wstring file = line.substr(tabPos + 1);
+								SCCSLogChangedPaths change;
+                                change.action = status;
+
+								// Convert git status to SVN-style action
+								switch (status)
+								{
+								case L'M':
+									change.text_modified = svn_tristate_true;
+									break;
+								case L'A':
+									break;
+								case L'D':
+									break;
+								case L'R':
+                                case L'C': {
+                                    // For renames and copies, the format is:
+                                    // R<score>\t<old>\t<new>
+                                    size_t secondTab = file.find(L'\t');
+                                    if (secondTab != std::wstring::npos)
+                                    {
+                                        change.copyfrom_path = file.substr(0, secondTab);
+                                        file = file.substr(secondTab + 1);
+                                    }
+                                }
+									break;
+								default:
+									continue;
+								}
+
+								pLogEntry->m_changedPaths[file] = change;
+							}
+						}
                     }
                 }
             }
