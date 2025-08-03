@@ -47,6 +47,7 @@ public:
     std::wstring                username;
     std::wstring                password;
     bool                        useDefaultAuth;
+    std::wstring                lastcheckedhash;   // Last checked commit hash for Git repositories
 
     SCCS_TYPE                   sccs;
     std::wstring                accurevRepo;

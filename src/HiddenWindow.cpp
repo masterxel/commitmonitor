@@ -761,10 +761,17 @@ DWORD CHiddenWindow::RunThread()
                 if (git->GetGitLog(it->second.gitRepoPath, it->second.gitBranch.empty() ? L"HEAD" : it->second.gitBranch, latestCommit, 1)) {
                     if (!latestCommit.empty()) {
                         std::wstring latestHash = latestCommit[0].commitHash;
-                        // Compare with our last checked commit
-                        if (it->second.logentries.empty() || 
-                            (it->second.logentries.begin()->first != latestHash)) {
+                        // Compare with our last checked hash
+                        if (it->second.lastcheckedhash.empty() || 
+                            (it->second.lastcheckedhash != latestHash)) {
                             hasUpdates = true;
+                            // Save the current hash for next time
+                            std::map<std::wstring,CUrlInfo> * pWrite = m_UrlInfos.GetWriteData();
+                            std::map<std::wstring,CUrlInfo>::iterator writeIt = pWrite->find(it->first);
+                            if (writeIt != pWrite->end()) {
+                                writeIt->second.lastcheckedhash = latestHash;
+                            }
+                            m_UrlInfos.ReleaseWriteData();
                         }
                     }
                 }

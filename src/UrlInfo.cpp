@@ -80,6 +80,8 @@ bool CUrlInfo::Save(FILE * hFile)
         return false;
     if (!CSerializeUtils::SaveNumber(hFile, lastcheckedrobots))
         return false;
+    if (!CSerializeUtils::SaveString(hFile, lastcheckedhash))
+        return false;
     if (!CSerializeUtils::SaveNumber(hFile, minutesinterval))
         return false;
     if (!CSerializeUtils::SaveNumber(hFile, minminutesinterval))
@@ -197,6 +199,8 @@ bool CUrlInfo::Load(const unsigned char *& buf)
             return false;
         lastcheckedrobots = (int)value;
     }
+    if (!CSerializeUtils::LoadString(buf, lastcheckedhash))
+        lastcheckedhash.clear();
     if (!CSerializeUtils::LoadNumber(buf, value))
         return false;
     minutesinterval = (int)value;
