@@ -1,3 +1,1 @@
-C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr\Debug\libapr.pdb
 C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr\Debug\libapr.lib
-C:\Users\maste\Downloads\commitmonitor-code-r1153-trunk\ext\apr\Debug_Win32\libapr.pdb

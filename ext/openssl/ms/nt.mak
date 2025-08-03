@@ -18,7 +18,7 @@ OPENSSLDIR=\usr\local\ssl
 # Set your compiler options
 PLATFORM=VC-WIN32
 CC=cl
-CFLAG= /MT /O2 /GL /arch:IA32 /Ob2 -DOPENSSL_THREADS  -DDSO_WIN32 -DOPENSSL_SSL_CLIENT_ENGINE_AUTO=capi -W3 -Gs0 -GF -Gy -nologo -DOPENSSL_SYSNAME_WIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -D_CRT_SECURE_NO_DEPRECATE -DOPENSSL_NO_RC5 -DOPENSSL_NO_MD2 -DOPENSSL_NO_SSL2 -DOPENSSL_NO_KRB5 -DOPENSSL_NO_GOST -DOPENSSL_NO_JPAKE -DOPENSSL_NO_WEAK_SSL_CIPHERS -DOPENSSL_NO_DYNAMIC_ENGINE    
+CFLAG= /MTd /Od -DDEBUG -D_DEBUG -DOPENSSL_THREADS  -DDSO_WIN32 -DOPENSSL_SSL_CLIENT_ENGINE_AUTO=capi -W3 -Gs0 -GF -Gy -Zi -nologo -DOPENSSL_SYSNAME_WIN32 -DWIN32_LEAN_AND_MEAN -DL_ENDIAN -D_CRT_SECURE_NO_DEPRECATE -DOPENSSL_NO_RC5 -DOPENSSL_NO_MD2 -DOPENSSL_NO_SSL2 -DOPENSSL_NO_KRB5 -DOPENSSL_NO_GOST -DOPENSSL_NO_JPAKE -DOPENSSL_NO_WEAK_SSL_CIPHERS -DOPENSSL_NO_DYNAMIC_ENGINE    
 APP_CFLAG= /Zi /Fd$(TMP_D)/app
 LIB_CFLAG=/Zl /Zi /Fd$(TMP_D)/lib
 SHLIB_CFLAG=
@@ -32,13 +32,13 @@ EX_LIBS=ws2_32.lib gdi32.lib advapi32.lib crypt32.lib user32.lib
 SRC_D=.
 
 LINK_CMD=link
-LFLAGS=/nologo /subsystem:console /opt:ref,icf /debug /LTCG
+LFLAGS=/nologo /subsystem:console /opt:ref /debug
 RSC=rc
 
 # The output directory for everything interesting
-OUT_D=out32
+OUT_D=out32.dbg
 # The output directory for all the temporary muck
-TMP_D=tmp32
+TMP_D=tmp32.dbg
 # The output directory for the header files
 INC_D=inc32
 INCO_D=inc32\openssl
@@ -48,7 +48,7 @@ CP=$(PERL) util/copy.pl
 RM=del /Q
 RANLIB=
 MKDIR=$(PERL) util/mkdir-p.pl
-MKLIB=lib /nologo /LTCG
+MKLIB=lib /nologo
 MLFLAGS=
 ASM=ml /nologo /Cp /coff /c /Cx /Zi
 
