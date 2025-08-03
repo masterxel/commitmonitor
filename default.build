@@ -137,7 +137,7 @@
     </description>
     <exec program="msbuild.exe" >
       <arg value="${solutionname}" />
-      <arg value="/t:rebuild" />
+      <arg value="/t:build" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=${platform}" />
       <arg value="/verbosity:minimal" />
