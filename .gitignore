@@ -3,3 +3,7 @@
 /bin
 *.obj
 *.tlog
+/ext/scintilla/obj/Debug_Win32
+/ext/scintilla/obj/Release_Win32
+/ext/apr-util/Release
+/ext/apr/Release

@@ -214,6 +214,10 @@ public:
     apr_time_t          date;
     std::wstring        message;
     std::map<std::wstring, SCCSLogChangedPaths>   m_changedPaths;
+    // Git-specific fields
+    std::wstring        commitHash; // Git commit hash
+    std::vector<std::wstring> parentHashes; // Parent commit hashes (for merge commits)
+    std::wstring        diff; // Diff text (optional)
 
     bool Save(FILE * hFile) const
     {
@@ -226,6 +230,18 @@ public:
         if (!CSerializeUtils::SaveNumber(hFile, date))
             return false;
         if (!CSerializeUtils::SaveString(hFile, message))
+            return false;
+        // Git fields
+        if (!CSerializeUtils::SaveString(hFile, commitHash))
+            return false;
+        if (!CSerializeUtils::SaveNumber(hFile, parentHashes.size()))
+            return false;
+        for (size_t i = 0; i < parentHashes.size(); ++i)
+        {
+            if (!CSerializeUtils::SaveString(hFile, parentHashes[i]))
+                return false;
+        }
+        if (!CSerializeUtils::SaveString(hFile, diff))
             return false;
 
         if (!CSerializeUtils::SaveNumber(hFile, CSerializeUtils::SerializeType_Map))
@@ -256,6 +272,21 @@ public:
             return false;
         date = value;
         if (!CSerializeUtils::LoadString(hFile, message))
+            return false;
+        // Git fields
+        if (!CSerializeUtils::LoadString(hFile, commitHash))
+            return false;
+        parentHashes.clear();
+        if (!CSerializeUtils::LoadNumber(hFile, value))
+            return false;
+        for (unsigned __int64 i = 0; i < value; ++i)
+        {
+            std::wstring parent;
+            if (!CSerializeUtils::LoadString(hFile, parent))
+                return false;
+            parentHashes.push_back(parent);
+        }
+        if (!CSerializeUtils::LoadString(hFile, diff))
             return false;
 
         m_changedPaths.clear();
@@ -296,6 +327,21 @@ public:
             return false;
         date = value;
         if (!CSerializeUtils::LoadString(buf, message))
+            return false;
+        // Git fields
+        if (!CSerializeUtils::LoadString(buf, commitHash))
+            return false;
+        parentHashes.clear();
+        if (!CSerializeUtils::LoadNumber(buf, value))
+            return false;
+        for (unsigned __int64 i = 0; i < value; ++i)
+        {
+            std::wstring parent;
+            if (!CSerializeUtils::LoadString(buf, parent))
+                return false;
+            parentHashes.push_back(parent);
+        }
+        if (!CSerializeUtils::LoadString(buf, diff))
             return false;
 
         m_changedPaths.clear();

@@ -134,7 +134,7 @@ bool CUrlInfo::Save(FILE * hFile)
 
     for (auto it = logentries.begin(); it != logentries.end(); ++it)
     {
-        if (!CSerializeUtils::SaveNumber(hFile, it->first))
+        if (!CSerializeUtils::SaveString(hFile, it->first))
             return false;
         if (!it->second.Save(hFile))
             return false;
@@ -322,13 +322,13 @@ bool CUrlInfo::Load(const unsigned char *& buf)
                 value = URLINFO_MAXENTRIES;
             for (unsigned __int64 i=0; i<value; ++i)
             {
-                unsigned __int64 key;
+                std::wstring key;
                 SCCSLogEntry logentry;
-                if (!CSerializeUtils::LoadNumber(buf, key))
+                if (!CSerializeUtils::LoadString(buf, key))
                     return false;
                 if (!logentry.Load(buf))
                     return false;
-                logentries[(svn_revnum_t)key] = logentry;
+                logentries[key] = logentry;
             }
             return true;
         }

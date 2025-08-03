@@ -49,5 +49,5 @@ protected:
 private:
     CUrlInfo                info;
     AeroControlBase         m_aerocontrols;
-    std::wstring            sSCCS[CUrlInfo::SCCS_LEN];
+    std::wstring            sSCCS[CUrlInfo::SCCS_LEN]; // Now includes "Git"
 };

@@ -216,6 +216,7 @@
     <ClCompile Include="CommitMonitor.cpp" />
     <ClCompile Include="DiffViewer.cpp" />
     <ClCompile Include="FindBar.cpp" />
+    <ClCompile Include="Git.cpp" />
     <ClCompile Include="HiddenWindow.cpp" />
     <ClCompile Include="MainDlg.cpp" />
     <ClCompile Include="MappedInFile.cpp" />
@@ -259,6 +260,8 @@
     <ClInclude Include="CommitMonitor.h" />
     <ClInclude Include="DiffViewer.h" />
     <ClInclude Include="FindBar.h" />
+    <ClInclude Include="Git.h" />
+    <ClInclude Include="GitFactory.h" />
     <ClInclude Include="HiddenWindow.h" />
     <ClInclude Include="MainDlg.h" />
     <ClInclude Include="MappedInFile.h" />

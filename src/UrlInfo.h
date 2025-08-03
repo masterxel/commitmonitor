@@ -40,6 +40,7 @@ public:
     typedef enum SCCS_TYPE_ {
       SCCS_SVN = 0,
       SCCS_ACCUREV,
+      SCCS_GIT,
       SCCS_LEN
     } SCCS_TYPE;
 
@@ -49,6 +50,8 @@ public:
 
     SCCS_TYPE                   sccs;
     std::wstring                accurevRepo;
+    std::wstring                gitRepoPath; // Path or URL to Git repository
+    std::wstring                gitBranch;   // Branch name for Git
     std::wstring                url;
     std::wstring                name;
     __time64_t                  lastchecked;
@@ -65,7 +68,8 @@ public:
     std::wstring                includeUsers;
     std::wstring                ignoreCommitLog;
 
-    std::map<svn_revnum_t,SCCSLogEntry> logentries;
+    // For SVN: revision number as key. For Git: use commit hash as key (cast to wstring)
+    std::map<std::wstring,SCCSLogEntry> logentries;
     int                         maxentries;
 
     bool                        parentpath;

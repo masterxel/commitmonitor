@@ -26,6 +26,7 @@
 #include "HiddenWindow.h"
 #include "resource.h"
 #include "MainDlg.h"
+#include "Git.h"
 #include "SCCS.h"
 #include "SVN.h"
 #include "Accurev.h"
@@ -727,6 +728,7 @@ DWORD CHiddenWindow::RunThread()
             SCCS *pSCCS;
             SVN svnAccess;
             ACCUREV accurevAccess;
+            Git gitAccess;
 
             switch (it->second.sccs) {
               default:
@@ -737,6 +739,10 @@ DWORD CHiddenWindow::RunThread()
               case CUrlInfo::SCCS_ACCUREV:
                 pSCCS = (SCCS *)&accurevAccess;
                 break;
+
+              case CUrlInfo::SCCS_GIT:
+                pSCCS = (Git*)&gitAccess;
+                break;
             }
 
             pSCCS->SetAuthInfo(it->second.username, it->second.password);
@@ -745,28 +751,55 @@ DWORD CHiddenWindow::RunThread()
                 _stprintf_s(infotextbuf, _countof(infotextbuf), _T("checking %s ..."), it->first.c_str());
                 SendMessage(*this, COMMITMONITOR_INFOTEXT, 0, (LPARAM)infotextbuf);
             }
-            svn_revnum_t headrev = pSCCS->GetHEADRevision(it->second.accurevRepo, it->first);
-            if ((pSCCS->Err)&&(pSCCS->Err->apr_err == SVN_ERR_RA_NOT_AUTHORIZED))
-            {
-                // only block the object for a short time
-                std::map<std::wstring,CUrlInfo> * pWrite = m_UrlInfos.GetWriteData();
-                std::map<std::wstring,CUrlInfo>::iterator writeIt = pWrite->find(it->first);
-                if (writeIt != pWrite->end())
-                {
-                    writeIt->second.lastchecked = currenttime;
-                    writeIt->second.error = pSCCS->GetLastErrorMsg();
-                    writeIt->second.errNr = pSCCS->Err->apr_err;
-                    // no need to save here just for this
+            bool hasUpdates = false;
+            svn_revnum_t headrev = 0;
+
+            if (it->second.sccs == CUrlInfo::SCCS_GIT) {
+                // For Git, get latest commit
+                std::vector<SCCSLogEntry> latestCommit;
+                Git* git = static_cast<Git*>(pSCCS);
+                if (git->GetGitLog(it->second.gitRepoPath, it->second.gitBranch.empty() ? L"HEAD" : it->second.gitBranch, latestCommit, 1)) {
+                    if (!latestCommit.empty()) {
+                        std::wstring latestHash = latestCommit[0].commitHash;
+                        // Compare with our last checked commit
+                        if (it->second.logentries.empty() || 
+                            (it->second.logentries.begin()->first != latestHash)) {
+                            hasUpdates = true;
+                        }
+                    }
                 }
-                m_UrlInfos.ReleaseWriteData();
-                continue;
+            } else {
+                // For SVN and others, use revision number
+                headrev = pSCCS->GetHEADRevision(it->second.accurevRepo, it->first);
+                if ((pSCCS->Err)&&(pSCCS->Err->apr_err == SVN_ERR_RA_NOT_AUTHORIZED))
+                {
+                    // only block the object for a short time
+                    std::map<std::wstring,CUrlInfo> * pWrite = m_UrlInfos.GetWriteData();
+                    std::map<std::wstring,CUrlInfo>::iterator writeIt = pWrite->find(it->first);
+                    if (writeIt != pWrite->end())
+                    {
+                        writeIt->second.lastchecked = currenttime;
+                        writeIt->second.error = pSCCS->GetLastErrorMsg();
+                        writeIt->second.errNr = pSCCS->Err->apr_err;
+                        // no need to save here just for this
+                    }
+                    m_UrlInfos.ReleaseWriteData();
+                    continue;
+                }
+                hasUpdates = (headrev > it->second.lastcheckedrev);
             }
+
             if (!m_bRun)
                 continue;
+
             std::set<std::wstring> authors;
-            if (headrev > it->second.lastcheckedrev)
+            if (hasUpdates)
             {
-                CTraceToOutputDebugString::Instance()(_T("%s has updates! Last checked revision was %ld, HEAD revision is %ld\n"), it->first.c_str(), it->second.lastcheckedrev, headrev);
+                if (it->second.sccs == CUrlInfo::SCCS_GIT) {
+                    CTraceToOutputDebugString::Instance()(_T("%s has updates since last check\n"), it->first.c_str());
+                } else {
+                    CTraceToOutputDebugString::Instance()(_T("%s has updates! Last checked revision was %ld, HEAD revision is %ld\n"), it->first.c_str(), it->second.lastcheckedrev, headrev);
+                }
                 if (m_hMainDlg)
                 {
                     _stprintf_s(infotextbuf, _countof(infotextbuf), _T("getting log for %s"), it->first.c_str());
@@ -774,8 +807,31 @@ DWORD CHiddenWindow::RunThread()
                 }
                 int nNewCommits = 0;        // commits without ignored ones
                 int nTotalNewCommits = 0;   // all commits, including ignored ones
-                if (pSCCS->GetLog(it->second.accurevRepo, it->first, it->second.startfromrev ? it->second.startfromrev : headrev, it->second.lastcheckedrev + 1))
-                {
+                bool logFetched = false;
+
+                if (it->second.sccs == CUrlInfo::SCCS_GIT) {
+                    // For Git, get logs since last check (up to 100 commits)
+                    Git* git = static_cast<Git*>(pSCCS);
+                    std::vector<SCCSLogEntry> newCommits;
+                    if (git->GetGitLog(it->second.gitRepoPath, it->second.gitBranch.empty() ? L"HEAD" : it->second.gitBranch, newCommits, 100)) {
+                        logFetched = true;
+                        // Clear old entries (we'll get a fresh set)
+                        std::map<std::wstring,CUrlInfo> * pWrite = m_UrlInfos.GetWriteData();
+                        std::map<std::wstring,CUrlInfo>::iterator writeIt = pWrite->find(it->first);
+                        if (writeIt != pWrite->end()) {
+                            writeIt->second.logentries.clear();
+                            for (const auto& entry : newCommits) {
+                                writeIt->second.logentries[entry.commitHash] = entry;
+                            }
+                        }
+                        m_UrlInfos.ReleaseWriteData();
+                    }
+                } else {
+                    // For SVN and others, use revision-based log fetching
+                    logFetched = pSCCS->GetLog(it->second.accurevRepo, it->first, it->second.startfromrev ? it->second.startfromrev : headrev, it->second.lastcheckedrev + 1);
+                }
+
+                if (logFetched) {
                     CTraceToOutputDebugString::Instance()(_T("log fetched for %s\n"), it->first.c_str());
                     if (!m_bRun)
                         continue;
@@ -806,14 +862,35 @@ DWORD CHiddenWindow::RunThread()
                         bool bEntryExists = false;
                         if (writeIt != pWrite->end())
                         {
-                            std::map<svn_revnum_t,SCCSLogEntry>::iterator existIt = writeIt->second.logentries.find(logit->first);
+                            // Convert key based on SCCS type
+                            std::wstring searchKey;
+                            if (writeIt->second.sccs == CUrlInfo::SCCS_GIT) {
+                                searchKey = logit->second.commitHash;
+                            } else {
+                                // Convert SVN revision to string
+                                wchar_t revBuf[32];
+                                _stprintf_s(revBuf, _countof(revBuf), _T("%ld"), logit->first);
+                                searchKey = revBuf;
+                            }
+                            
+                            auto existIt = writeIt->second.logentries.find(searchKey);
                             bEntryExists = existIt != writeIt->second.logentries.end();
                             bool readState = false;
                             if (bEntryExists)
                                 readState = existIt->second.read;
                             logit->second.read = readState;
 
-                            writeIt->second.logentries[logit->first] = logit->second;
+                            // Create key based on SCCS type
+                            std::wstring entryKey;
+                            if (writeIt->second.sccs == CUrlInfo::SCCS_GIT) {
+                                entryKey = logit->second.commitHash;
+                            } else {
+                                // Convert SVN revision to string
+                                wchar_t revBuf[32];
+                                _stprintf_s(revBuf, _countof(revBuf), _T("%ld"), logit->first);
+                                entryKey = revBuf;
+                            }
+                            writeIt->second.logentries[entryKey] = logit->second;
 
                             if (!bEntryExists)
                             {
@@ -876,9 +953,10 @@ DWORD CHiddenWindow::RunThread()
                                     bNewEntries = true;
                                     nNewCommits++;
                                 }
-                                else
+                                else {
                                     // set own commit as already read
-                                    writeIt->second.logentries[logit->first].read = true;
+                                    writeIt->second.logentries[entryKey].read = true;
+                                }
                             }
                             writeIt->second.error.clear();
                         }

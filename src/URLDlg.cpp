@@ -31,6 +31,7 @@ CURLDlg::CURLDlg(void)
 {
     sSCCS[0] = _T("SVN");
     sSCCS[1] = _T("Accurev");
+    sSCCS[2] = _T("Git");
 }
 
 CURLDlg::~CURLDlg(void)
@@ -61,16 +62,22 @@ void CURLDlg::SetSCCS(CUrlInfo::SCCS_TYPE sccs)
     // SCCS specific initialization
     switch (sccs)
     {
-    default:
-    case CUrlInfo::SCCS_SVN:
-        AddToolTip(IDC_URLTOMONITOR, _T("URL to the repository, or the SVNParentPath URL"));
-        SetDlgItemText(*this, IDC_REPOLABEL, _T(""));
-        SetDlgItemText(*this, IDC_URLTOMONITORLABEL, _T("URL to monitor"));
-        SetDlgItemText(*this, IDC_URLGROUP, _T("SVN repository settings"));
-        ShowWindow(GetDlgItem(*this, IDC_ACCUREVREPO), SW_HIDE);
-        SendMessage(GetDlgItem(*this, IDC_SCCSCOMBO), CB_SETCURSEL, (WPARAM)sccs, 0);
+    case CUrlInfo::SCCS_GIT:
+        AddToolTip(IDC_URLTOMONITOR, _T("Path to the Git repository (local or remote URL)"));
+        SetDlgItemText(*this, IDC_REPOLABEL, _T("Branch"));
+        SetDlgItemText(*this, IDC_URLTOMONITORLABEL, _T("Git repository path/URL"));
+        SetDlgItemText(*this, IDC_URLGROUP, _T("Git repository settings"));
+        ShowWindow(GetDlgItem(*this, IDC_ACCUREVREPO), SW_SHOW);
+        if (!info.gitRepoPath.empty()) {
+            SetDlgItemText(*this, IDC_URLTOMONITOR, info.gitRepoPath.c_str());
+        }
+        if (!info.gitBranch.empty()) {
+            SetDlgItemText(*this, IDC_ACCUREVREPO, info.gitBranch.c_str());
+        } else {
+            SetDlgItemText(*this, IDC_ACCUREVREPO, L"HEAD");  // Default to HEAD if no branch specified
+        }
+        SendMessage(GetDlgItem(*this, IDC_SCCSCOMBO), CB_SETCURSEL, (WPARAM)sccs, 2);
         break;
-
     case CUrlInfo::SCCS_ACCUREV:
         AddToolTip(IDC_URLTOMONITOR, _T("Accurev stream name"));
         SetDlgItemText(*this, IDC_REPOLABEL, _T("Accurev repository"));
@@ -78,6 +85,15 @@ void CURLDlg::SetSCCS(CUrlInfo::SCCS_TYPE sccs)
         SetDlgItemText(*this, IDC_URLGROUP, _T("Accurev repository settings"));
         ShowWindow(GetDlgItem(*this, IDC_ACCUREVREPO), SW_SHOW);
         SendMessage(GetDlgItem(*this, IDC_SCCSCOMBO), CB_SETCURSEL, (WPARAM)sccs, 1);
+        break;
+    default:
+    case CUrlInfo::SCCS_SVN:
+        AddToolTip(IDC_URLTOMONITOR, _T("URL to the repository, or the SVNParentPath URL"));
+        SetDlgItemText(*this, IDC_REPOLABEL, _T("") );
+        SetDlgItemText(*this, IDC_URLTOMONITORLABEL, _T("URL to monitor"));
+        SetDlgItemText(*this, IDC_URLGROUP, _T("SVN repository settings"));
+        ShowWindow(GetDlgItem(*this, IDC_ACCUREVREPO), SW_HIDE);
+        SendMessage(GetDlgItem(*this, IDC_SCCSCOMBO), CB_SETCURSEL, (WPARAM)sccs, 0);
         break;
     }
 }
@@ -213,6 +229,23 @@ LRESULT CURLDlg::DoCommand(int id, int cmd)
                     buffer = GetDlgItemText(IDC_ACCUREVREPO);
                     info.accurevRepo = std::wstring(buffer.get());
                     CStringUtils::trim(info.accurevRepo);
+                }
+                break;
+
+            case CUrlInfo::SCCS_GIT:
+                {
+                    // Get Git repository path
+                    auto buffer = GetDlgItemText(IDC_URLTOMONITOR);
+                    info.gitRepoPath = std::wstring(buffer.get());
+                    CStringUtils::trim(info.gitRepoPath);
+                    
+                    // Get Git branch
+                    buffer = GetDlgItemText(IDC_ACCUREVREPO);  // We're reusing this field for Git branch
+                    info.gitBranch = std::wstring(buffer.get());
+                    CStringUtils::trim(info.gitBranch);
+                    
+                    // Also set URL to the repo path for compatibility
+                    info.url = info.gitRepoPath;
                 }
                 break;
             }

@@ -21,6 +21,7 @@
 #include "CommitMonitor.h"
 #include "MainDlg.h"
 
+#include "Git.h"
 #include "URLDlg.h"
 #include "OptionsDlg.h"
 #include "AboutDlg.h"
@@ -1301,14 +1302,14 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
             {
                 SCCSLogEntry * pLogEntry = (SCCSLogEntry*)item.lParam;
 
-                // Switch how the diff is done in SVN / Accurev
+                // Switch how the diff is done in SVN / Accurev / Git
                 switch(pUrlInfo->sccs)
                 {
                   default:
                   case CUrlInfo::SCCS_SVN:
-                    {
+                  {
                       // find the diff name
-                      const CUrlInfo * pInfo = &pRead->find(*(std::wstring*)itemex.lParam)->second;
+                      const CUrlInfo* pInfo = &pRead->find(*(std::wstring*)itemex.lParam)->second;
                       // in case the project name has 'path' chars in it, we have to remove those first
                       _stprintf_s(buf.get(), 4096, _T("%s_%ld.diff"), CAppUtils::ConvertName(pInfo->name).c_str(), pLogEntry->revision);
                       std::wstring diffFileName = CAppUtils::GetDataDir();
@@ -1326,7 +1327,7 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                           // first find out if there's only one file changed and if there is,
                           // then directly diff that url instead of the project url
                           std::wstring diffurl = pInfo->url;
-                          if (pLogEntry->m_changedPaths.size()==1)
+                          if (pLogEntry->m_changedPaths.size() == 1)
                           {
                               SVN svn;
                               diffurl = svn.GetRootUrl(pInfo->url);
@@ -1339,8 +1340,8 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                           cmd += diffurl;
                           cmd += _T("\" /startrev:");
 
-                          TCHAR numBuf[100] = {0};
-                          _stprintf_s(numBuf, _countof(numBuf), _T("%ld"), pLogEntry->revision-1);
+                          TCHAR numBuf[100] = { 0 };
+                          _stprintf_s(numBuf, _countof(numBuf), _T("%ld"), pLogEntry->revision - 1);
                           cmd += numBuf;
                           cmd += _T(" /endrev:");
                           _stprintf_s(numBuf, _countof(numBuf), _T("%ld"), pLogEntry->revision);
@@ -1380,7 +1381,7 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                               CProgressDlg progDlg;
                               svn.SetAndClearProgressInfo(&progDlg);
                               progDlg.SetTitle(_T("Fetching Diff"));
-                              TCHAR dispbuf[MAX_PATH] = {0};
+                              TCHAR dispbuf[MAX_PATH] = { 0 };
                               _stprintf_s(dispbuf, _countof(dispbuf), _T("fetching diff of revision %ld"), pLogEntry->revision);
                               progDlg.SetLine(1, dispbuf);
                               progDlg.SetShowProgressBar(false);
@@ -1388,7 +1389,7 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                               progDlg.SetLine(1, dispbuf);
                               progDlg.SetProgress(3, 100);    // set some dummy progress
                               CRegStdString diffParams = CRegStdString(_T("Software\\CommitMonitor\\DiffParameters"));
-                              if (!svn.Diff(pInfo->url, pLogEntry->revision, pLogEntry->revision-1, pLogEntry->revision, true, true, false, diffParams, false, diffFileName, std::wstring()))
+                              if (!svn.Diff(pInfo->url, pLogEntry->revision, pLogEntry->revision - 1, pLogEntry->revision, true, true, false, diffParams, false, diffFileName, std::wstring()))
                               {
                                   progDlg.Stop();
                                   if (svn.Err->apr_err != SVN_ERR_CANCELLED)
@@ -1404,9 +1405,47 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                           if (PathFileExists(diffFileName.c_str()))
                               CAppUtils::LaunchApplication(cmd);
                       }
+                      break;
+                  }
+
+                  case CUrlInfo::SCCS_GIT:
+                    {
+                        // Use Git class to get diff
+                        Git git;
+                        std::wstring diffText;
+                        if (git.GetGitDiff(pUrlInfo->gitRepoPath, pLogEntry->commitHash, diffText)) {
+                            // Save diff to temp file
+                            std::wstring diffFileName = CAppUtils::GetDataDir() + L"\\" + pLogEntry->commitHash + L".diff";
+                            std::wofstream diffFile(diffFileName);
+                            diffFile << diffText;
+                            diffFile.close();
+                            // Launch diff viewer
+                            std::wstring cmd;
+                            std::unique_ptr<WCHAR[]> apppath(new WCHAR[4096]);
+                            GetModuleFileName(NULL, apppath.get(), 4096);
+                            CRegStdString diffViewer = CRegStdString(_T("Software\\CommitMonitor\\DiffViewer"));
+                            if (std::wstring(diffViewer).empty()) {
+                                cmd = apppath.get();
+                                cmd += L" /patchfile:\"";
+                            } else {
+                                cmd = (std::wstring)diffViewer;
+                                cmd += L" \"";
+                            }
+                            cmd += diffFileName;
+                            cmd += L"\"";
+                            if (std::wstring(diffViewer).empty()) {
+                                cmd += L" /title:\"";
+                                cmd += pUrlInfo->name;
+                                cmd += L", commit ";
+                                cmd += pLogEntry->commitHash;
+                                cmd += L"\"";
+                            }
+                            CAppUtils::LaunchApplication(cmd);
+                        } else {
+                            ::MessageBox(*this, L"Failed to fetch Git diff.", L"CommitMonitor", MB_ICONERROR);
+                        }
                     }
                     break;
-
 
                   case CUrlInfo::SCCS_ACCUREV:
                     {
@@ -1937,9 +1976,8 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
                                 addEntry = std::regex_search(it->second.message, regCheck);
                                 if (!addEntry)
                                 {
-                                    _stprintf_s(buf, _countof(buf), _T("%ld"), it->first);
-                                    std::wstring s = std::wstring(buf);
-                                    addEntry = std::regex_search(s, regCheck);
+                                    // Search directly in the string key since it's already a wstring
+                                    addEntry = std::regex_search(it->first.c_str(), regCheck);
                                     if (!addEntry)
                                     {
                                         for (const auto& cpit : it->second.m_changedPaths)
@@ -1988,9 +2026,8 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
                                 addEntry = s.find(sSearch) != std::wstring::npos;
                                 if (!addEntry)
                                 {
-                                    _stprintf_s(buf, _countof(buf), _T("%ld"), it->first);
-                                    s = buf;
-                                    addEntry = s.find(sSearch) != std::wstring::npos;
+                                    // Search directly in the string key
+                                    addEntry = it->first.find(sSearch) != std::wstring::npos;
                                     if (!addEntry)
                                     {
                                         for (const auto& cpit : it->second.m_changedPaths)
@@ -2065,9 +2102,38 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
                 item.stateMask = LVIS_SELECTED;
                 item.state = LVIS_SELECTED;
             }
-            // set revision
-            _stprintf_s(buf, _countof(buf), _T("%ld"), it->first);
-            item.pszText = buf;
+            // set revision or commit hash
+            if (info->sccs == CUrlInfo::SCCS_GIT) {
+                wcsncpy(buf, it->second.commitHash.c_str(), _countof(buf));
+                buf[_countof(buf)-1] = 0;
+                item.pszText = buf;
+                item.iSubItem = 0;
+                ListView_InsertItem(m_hListControl, &item);
+                // date
+                LVITEM dateItem = item;
+                dateItem.iSubItem = 1;
+                _stprintf_s(buf, _countof(buf), _T("%I64d"), it->second.date); // You may want to format this as a readable date
+                dateItem.pszText = buf;
+                ListView_SetItem(m_hListControl, &dateItem);
+                // author
+                LVITEM authorItem = item;
+                authorItem.iSubItem = 2;
+                wcsncpy(buf, it->second.author.c_str(), _countof(buf));
+                buf[_countof(buf)-1] = 0;
+                authorItem.pszText = buf;
+                ListView_SetItem(m_hListControl, &authorItem);
+                // log message
+                LVITEM msgItem = item;
+                msgItem.iSubItem = 3;
+                wcsncpy(buf, it->second.message.c_str(), _countof(buf));
+                buf[_countof(buf)-1] = 0;
+                msgItem.pszText = buf;
+                ListView_SetItem(m_hListControl, &msgItem);
+                continue;
+            } else {
+                // Use the string key directly
+                item.pszText = const_cast<LPWSTR>(it->first.c_str());
+            }
             ListView_InsertItem(m_hListControl, &item);
 
             // set date
@@ -2239,7 +2305,7 @@ void CMainDlg::RefreshAll(HTREEITEM hItem)
         CUrlInfo * info = &pWrite->find(*(std::wstring*)itemex.lParam)->second;
 
         svn_revnum_t lowestRev = 0;
-        std::map<svn_revnum_t,SCCSLogEntry>::iterator it = info->logentries.begin();
+        std::map<std::wstring,SCCSLogEntry>::iterator it = info->logentries.begin();
         if (it != info->logentries.end())
         {
             lowestRev = it->second.revision;
@@ -2578,7 +2644,16 @@ void CMainDlg::RemoveSelectedListItems()
                 diffFileName += std::wstring(buf);
                 DeleteFile(diffFileName.c_str());
 
-                pWrite->find((*(std::wstring*)itemex.lParam))->second.logentries.erase(pLogEntry->revision);
+                auto& info = pWrite->find((*(std::wstring*)itemex.lParam))->second;
+                if (info.sccs == CUrlInfo::SCCS_GIT) {
+                    // For Git, use commit hash as key
+                    info.logentries.erase(pLogEntry->commitHash);
+                } else {
+                    // For SVN, convert revision to string
+                    wchar_t revBuf[32];
+                    _stprintf_s(revBuf, _countof(revBuf), _T("%ld"), pLogEntry->revision);
+                    info.logentries.erase(revBuf);
+                }
                 ListView_DeleteItem(m_hListControl, i);
                 if (nFirstDeleted < 0)
                     nFirstDeleted = i;
@@ -3177,8 +3252,14 @@ void CMainDlg::OnContextMenu(WPARAM wParam, LPARAM lParam)
                         {
                             // set the last checked revision to 1 so the next fetch
                             // fetches the log with limit = NumLogs
-                            svn_revnum_t rev = info->logentries.cbegin()->second.revision;
-                            info->startfromrev = rev;
+                            if (info->sccs == CUrlInfo::SCCS_GIT) {
+                                // For Git, we don't use numeric revisions
+                                info->startfromrev = 0;
+                            } else {
+                                // For SVN, use the revision from the newest entry
+                                svn_revnum_t rev = info->logentries.cbegin()->second.revision;
+                                info->startfromrev = rev;
+                            }
                             info->lastcheckedrev = 0;
                             url = info->url;
                         }
