@@ -822,13 +822,16 @@ DWORD CHiddenWindow::RunThread()
                     std::vector<SCCSLogEntry> newCommits;
                     if (git->GetGitLog(it->second.gitRepoPath, it->second.gitBranch.empty() ? L"HEAD" : it->second.gitBranch, newCommits, 100)) {
                         logFetched = true;
-                        // Clear old entries (we'll get a fresh set)
+                        // Add any new entries that we don't already have
                         std::map<std::wstring,CUrlInfo> * pWrite = m_UrlInfos.GetWriteData();
                         std::map<std::wstring,CUrlInfo>::iterator writeIt = pWrite->find(it->first);
                         if (writeIt != pWrite->end()) {
-                            writeIt->second.logentries.clear();
+                            // Keep existing entries and add new ones
                             for (const auto& entry : newCommits) {
-                                writeIt->second.logentries[entry.commitHash] = entry;
+                                // Only add if we don't already have this commit
+                                if (writeIt->second.logentries.find(entry.commitHash) == writeIt->second.logentries.end()) {
+                                    writeIt->second.logentries[entry.commitHash] = entry;
+                                }
                             }
                         }
                         m_UrlInfos.ReleaseWriteData();
