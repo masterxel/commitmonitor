@@ -117,6 +117,12 @@ bool CUrlInfo::Save(FILE * hFile)
     if (!CSerializeUtils::SaveString(hFile, accurevRepo))
         return false;
 
+    // For Git repository support
+    if (!CSerializeUtils::SaveString(hFile, gitRepoPath))
+        return false;
+    if (!CSerializeUtils::SaveString(hFile, gitBranch))
+        return false;
+
     // Version 16
     if (!CSerializeUtils::SaveNumber(hFile, useDefaultAuth))
         return false;
@@ -291,10 +297,18 @@ bool CUrlInfo::Load(const unsigned char *& buf)
 
         if (!CSerializeUtils::LoadString(buf, accurevRepo))
             return false;
+
+        // Load Git repository info
+        if (!CSerializeUtils::LoadString(buf, gitRepoPath))
+            gitRepoPath.clear();
+        if (!CSerializeUtils::LoadString(buf, gitBranch))
+            gitBranch.clear();
     }
     else
     {
         sccs = SCCS_SVN;
+        gitRepoPath.clear();
+        gitBranch.clear();
     }
     if (version >= 16)
     {
