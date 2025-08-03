@@ -1414,9 +1414,16 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
                         // Check if TortoiseGit is installed
                         std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
                         if (bUseTSVN && !tgitinstalled.empty()) {
-                            // Use TortoiseGitProc to show the diff
-                            std::wstring cmd = L"\"" + tgitinstalled + L"\" /command:showcompare ";
-                            cmd += L"/path:\"" + pUrlInfo->gitRepoPath + L"\" ";
+                            std::wstring cmd = L"\"" + tgitinstalled + L"\" /command:showcompare /path:\"";
+                            
+                            // If we have exactly one file changed, include its path
+                            if (pLogEntry->m_changedPaths.size() == 1) {
+                                cmd += pUrlInfo->gitRepoPath + L"\\" + pLogEntry->m_changedPaths.begin()->first;
+                            } else {
+                                cmd += pUrlInfo->gitRepoPath;
+                            }
+                            cmd += L"\" ";
+                            
                             cmd += L"/revision1:" + pLogEntry->commitHash + L"~1 ";  // Parent of the commit
                             cmd += L"/revision2:" + pLogEntry->commitHash;
                             CAppUtils::LaunchApplication(cmd);
