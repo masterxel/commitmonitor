@@ -2109,26 +2109,28 @@ void CMainDlg::TreeItemSelected(HWND hTreeControl, HTREEITEM hSelectedItem)
                 item.pszText = buf;
                 item.iSubItem = 0;
                 ListView_InsertItem(m_hListControl, &item);
-                // date
-                LVITEM dateItem = item;
-                dateItem.iSubItem = 1;
-                _stprintf_s(buf, _countof(buf), _T("%I64d"), it->second.date); // You may want to format this as a readable date
-                dateItem.pszText = buf;
-                ListView_SetItem(m_hListControl, &dateItem);
-                // author
-                LVITEM authorItem = item;
-                authorItem.iSubItem = 2;
-                wcsncpy(buf, it->second.author.c_str(), _countof(buf));
-                buf[_countof(buf)-1] = 0;
-                authorItem.pszText = buf;
-                ListView_SetItem(m_hListControl, &authorItem);
-                // log message
-                LVITEM msgItem = item;
-                msgItem.iSubItem = 3;
-                wcsncpy(buf, it->second.message.c_str(), _countof(buf));
-                buf[_countof(buf)-1] = 0;
-                msgItem.pszText = buf;
-                ListView_SetItem(m_hListControl, &msgItem);
+                // Set date
+                if (it->second.date)
+                    _tcscpy_s(buf, _countof(buf), CAppUtils::ConvertDate(it->second.date).c_str());
+                else
+                    _tcscpy_s(buf, _countof(buf), g_nodate.c_str());
+                ListView_SetItemText(m_hListControl, 0, 1, buf);
+
+                // Set author
+                if (!it->second.author.empty())
+                    _tcscpy_s(buf, _countof(buf), it->second.author.c_str());
+                else
+                    _tcscpy_s(buf, _countof(buf), g_noauthor.c_str());
+                ListView_SetItemText(m_hListControl, 0, 2, buf);
+
+                // Set log message
+                std::wstring msg = it->second.message;
+                std::remove(msg.begin(), msg.end(), '\r');
+                std::replace(msg.begin(), msg.end(), '\n', ' ');
+                std::replace(msg.begin(), msg.end(), '\t', ' ');
+                _tcsncpy_s(buf, _countof(buf), msg.c_str(), _countof(buf) - 1);
+                buf[_countof(buf) - 1] = 0;
+                ListView_SetItemText(m_hListControl, 0, 3, buf);
                 continue;
             } else {
                 // Use the string key directly

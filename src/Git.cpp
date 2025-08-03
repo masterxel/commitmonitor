@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <fcntl.h>
 #include <io.h>
+#include <apr_time.h>
 
 Git::Git() {}
 Git::~Git() {}
@@ -154,7 +155,9 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
         size_t pos3 = line.find(L"|", pos2+1);
         entry.author = line.substr(pos2+1, pos3-pos2-1);
         size_t pos4 = line.find(L"|", pos3+1);
-        entry.date = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
+        // Convert Unix timestamp to APR time (microseconds since epoch)
+        apr_time_t unixTime = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
+        entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
         entry.message = line.substr(pos4+1);
         logEntries.push_back(entry);
     }
@@ -217,7 +220,9 @@ bool Git::GetCommit(const std::wstring& repoPath, const std::wstring& commitHash
         size_t pos3 = line.find(L"|", pos2+1);
         entry.author = line.substr(pos2+1, pos3-pos2-1);
         size_t pos4 = line.find(L"|", pos3+1);
-        entry.date = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
+        // Convert Unix timestamp to APR time (microseconds since epoch)
+        apr_time_t unixTime = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
+        entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
         entry.message = line.substr(pos4+1);
     }
     _pclose(pipe);
