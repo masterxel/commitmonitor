@@ -405,6 +405,22 @@ bool CAppUtils::IsWow64()
     return !!bIsWow64;
 }
 
+std::wstring CAppUtils::GetTortoiseGitPath()
+{
+    std::wstring sRet;
+    CRegStdString tgitinstalled = CRegStdString(_T("Software\\TortoiseGit\\ProcPath"), _T(""), false, HKEY_LOCAL_MACHINE);
+    sRet = std::wstring(tgitinstalled);
+    if (sRet.empty())
+    {
+        if (IsWow64())
+        {
+            CRegStdString tgitinstalled64 = CRegStdString(_T("Software\\TortoiseGit\\ProcPath"), _T(""), false, HKEY_LOCAL_MACHINE, KEY_WOW64_64KEY);
+            sRet = std::wstring(tgitinstalled64);
+        }
+    }
+    return sRet;
+}
+
 std::wstring CAppUtils::GetTSVNPath()
 {
     std::wstring sRet;

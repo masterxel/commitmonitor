@@ -42,6 +42,7 @@ public:
     static std::string              PathEscape(const std::string& path);
     static bool                     IsWow64();
     static std::wstring             GetTSVNPath();
+    static std::wstring             GetTortoiseGitPath();
     static std::wstring             GetVersionStringFromExe(LPCTSTR path);
     static bool                     ExtractBinResource(const std::wstring& strCustomResName, int nResourceId, const std::wstring& strOutputPath);
     static bool                     WriteAsciiStringToClipboard(const std::wstring& sClipdata, HWND hOwningWnd);

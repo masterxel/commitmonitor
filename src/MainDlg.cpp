@@ -1411,39 +1411,50 @@ bool CMainDlg::ShowDiff(bool bUseTSVN)
 
                   case CUrlInfo::SCCS_GIT:
                     {
-                        // Use Git class to get diff
-                        Git git;
-                        std::wstring diffText;
-                        if (git.GetGitDiff(pUrlInfo->gitRepoPath, pLogEntry->commitHash, diffText)) {
-                            // Save diff to temp file
-                            std::wstring diffFileName = CAppUtils::GetDataDir() + L"\\" + pLogEntry->commitHash + L".diff";
-                            std::wofstream diffFile(diffFileName);
-                            diffFile << diffText;
-                            diffFile.close();
-                            // Launch diff viewer
-                            std::wstring cmd;
-                            std::unique_ptr<WCHAR[]> apppath(new WCHAR[4096]);
-                            GetModuleFileName(NULL, apppath.get(), 4096);
-                            CRegStdString diffViewer = CRegStdString(_T("Software\\CommitMonitor\\DiffViewer"));
-                            if (std::wstring(diffViewer).empty()) {
-                                cmd = apppath.get();
-                                cmd += L" /patchfile:\"";
-                            } else {
-                                cmd = (std::wstring)diffViewer;
-                                cmd += L" \"";
-                            }
-                            cmd += diffFileName;
-                            cmd += L"\"";
-                            if (std::wstring(diffViewer).empty()) {
-                                cmd += L" /title:\"";
-                                cmd += pUrlInfo->name;
-                                cmd += L", commit ";
-                                cmd += pLogEntry->commitHash;
-                                cmd += L"\"";
-                            }
+                        // Check if TortoiseGit is installed
+                        std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+                        if (bUseTSVN && !tgitinstalled.empty()) {
+                            // Use TortoiseGitProc to show the diff
+                            std::wstring cmd = L"\"" + tgitinstalled + L"\" /command:showcompare ";
+                            cmd += L"/path:\"" + pUrlInfo->gitRepoPath + L"\" ";
+                            cmd += L"/revision1:" + pLogEntry->commitHash + L"~1 ";  // Parent of the commit
+                            cmd += L"/revision2:" + pLogEntry->commitHash;
                             CAppUtils::LaunchApplication(cmd);
                         } else {
-                            ::MessageBox(*this, L"Failed to fetch Git diff.", L"CommitMonitor", MB_ICONERROR);
+                            // Fallback to built-in diff viewer
+                            Git git;
+                            std::wstring diffText;
+                            if (git.GetGitDiff(pUrlInfo->gitRepoPath, pLogEntry->commitHash, diffText)) {
+                                // Save diff to temp file
+                                std::wstring diffFileName = CAppUtils::GetDataDir() + L"\\" + pLogEntry->commitHash + L".diff";
+                                std::wofstream diffFile(diffFileName);
+                                diffFile << diffText;
+                                diffFile.close();
+                                // Launch diff viewer
+                                std::wstring cmd;
+                                std::unique_ptr<WCHAR[]> apppath(new WCHAR[4096]);
+                                GetModuleFileName(NULL, apppath.get(), 4096);
+                                CRegStdString diffViewer = CRegStdString(_T("Software\\CommitMonitor\\DiffViewer"));
+                                if (std::wstring(diffViewer).empty()) {
+                                    cmd = apppath.get();
+                                    cmd += L" /patchfile:\"";
+                                } else {
+                                    cmd = (std::wstring)diffViewer;
+                                    cmd += L" \"";
+                                }
+                                cmd += diffFileName;
+                                cmd += L"\"";
+                                if (std::wstring(diffViewer).empty()) {
+                                    cmd += L" /title:\"";
+                                    cmd += pUrlInfo->name;
+                                    cmd += L", commit ";
+                                    cmd += pLogEntry->commitHash;
+                                    cmd += L"\"";
+                                }
+                                CAppUtils::LaunchApplication(cmd);
+                            } else {
+                                ::MessageBox(*this, L"Failed to fetch Git diff.", L"CommitMonitor", MB_ICONERROR);
+                            }
                         }
                     }
                     break;
