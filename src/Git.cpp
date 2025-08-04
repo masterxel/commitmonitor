@@ -199,6 +199,8 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
 
     // Now get the log from the remote tracking branch
     cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << remoteBranch 
+        << L" --no-merges"
+        << L" --first-parent"
         << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
 
     std::wstring cmdOutput;
