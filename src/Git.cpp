@@ -201,7 +201,7 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
     cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << remoteBranch 
         << L" --no-merges"
         << L" --first-parent"
-        << L" --pretty=format:\"%h|%H|%P|%an|%at|%s\" -n " << maxCount;
+        << L" --pretty=format:\"CommitStart%x1E%h|%H|%P|%an|%at|%B%x1E\" -n " << maxCount;
 
     std::wstring cmdOutput;
     if (!RunGitCommand(cmd.str(), cmdOutput)) {
@@ -209,40 +209,49 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
         return false;
     }
 
-    // Process output line by line
-    std::wstringstream ss(cmdOutput);
-    std::wstring line;
-    while (std::getline(ss, line)) {
-        // Trim newline characters
-        while (!line.empty() && (line.back() == L'\n' || line.back() == L'\r')) {
-            line.pop_back();
+    // Split output by commit separator (Record Separator control char)
+    const std::wstring separator = L"CommitStart\x1E";
+    size_t pos = 0;
+    size_t nextPos;
+    while ((nextPos = cmdOutput.find(separator, pos)) != std::wstring::npos) {
+        // Extract commit data between separators
+        size_t endPos = cmdOutput.find(L"\x1E", nextPos + separator.length());
+        if (endPos == std::wstring::npos) break;
+        
+        std::wstring commitData = cmdOutput.substr(nextPos + separator.length(), 
+                                                 endPos - (nextPos + separator.length()));
+        if (commitData.empty()) {
+            pos = endPos + 1;
+            continue;
+        }
+
+        SCCSLogEntry entry;
+        // Parse fields separated by |
+        std::vector<std::wstring> fields;
+        size_t fieldStart = 0;
+        size_t fieldEnd;
+        
+        while ((fieldEnd = commitData.find(L'|', fieldStart)) != std::wstring::npos) {
+            fields.push_back(commitData.substr(fieldStart, fieldEnd - fieldStart));
+            fieldStart = fieldEnd + 1;
+        }
+        // Add the last field (commit message)
+        fields.push_back(commitData.substr(fieldStart));
+        
+        if (fields.size() >= 6) {
+            entry.shortHash = fields[0];
+            entry.commitHash = fields[1];
+            entry.parentHashes.push_back(fields[2]);
+            entry.author = fields[3];
+            // Convert Unix timestamp to APR time (microseconds since epoch)
+            apr_time_t unixTime = _wtoi64(fields[4].c_str());
+            entry.date = unixTime * APR_TIME_C(1000000);
+            entry.message = fields[5];
+            
+            logEntries.push_back(entry);
         }
         
-        if (line.empty()) continue;
-
-        size_t pos = 0;
-        SCCSLogEntry entry;
-        // Parse: %h|%H|%P|%an|%at|%s
-        pos = line.find(L"|");
-        if (pos == std::wstring::npos) continue;  // Invalid format, skip line
-        
-        entry.shortHash = line.substr(0, pos);  // Store short hash
-        size_t pos2 = line.find(L"|", pos+1);
-        if (pos2 == std::wstring::npos) continue;  // Invalid format, skip line
-        
-        entry.commitHash = line.substr(pos+1, pos2-pos-1);  // Store full hash
-        size_t pos3 = line.find(L"|", pos2+1);
-        if (pos3 == std::wstring::npos) continue;  // Invalid format, skip line
-        
-        entry.parentHashes.push_back(line.substr(pos2+1, pos3-pos2-1));
-        size_t pos4 = line.find(L"|", pos3+1);
-        entry.author = line.substr(pos3+1, pos4-pos3-1);
-        size_t pos5 = line.find(L"|", pos4+1);
-        // Convert Unix timestamp to APR time (microseconds since epoch)
-        apr_time_t unixTime = _wtoi64(line.substr(pos4+1, pos5-pos4-1).c_str());
-        entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
-        entry.message = line.substr(pos5+1);
-        logEntries.push_back(entry);
+        pos = endPos + 1;
     }
     return true;
 }
