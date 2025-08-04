@@ -63,9 +63,9 @@ void CURLDlg::SetSCCS(CUrlInfo::SCCS_TYPE sccs)
     switch (sccs)
     {
     case CUrlInfo::SCCS_GIT:
-        AddToolTip(IDC_URLTOMONITOR, _T("Path to the Git repository (local or remote URL)"));
+        AddToolTip(IDC_URLTOMONITOR, _T("Path to the Git repository (on disk, must already be cloned)"));
         SetDlgItemText(*this, IDC_REPOLABEL, _T("Branch"));
-        SetDlgItemText(*this, IDC_URLTOMONITORLABEL, _T("Git repository path/URL"));
+        SetDlgItemText(*this, IDC_URLTOMONITORLABEL, _T("Git repository path"));
         SetDlgItemText(*this, IDC_URLGROUP, _T("Git repository settings"));
         ShowWindow(GetDlgItem(*this, IDC_ACCUREVREPO), SW_SHOW);
         if (!info.gitRepoPath.empty()) {
