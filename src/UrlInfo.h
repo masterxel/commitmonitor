@@ -82,6 +82,17 @@ public:
 
     bool                        Save(FILE * hFile);
     bool                        Load(const unsigned char *& buf);
+
+    static std::wstring GetProjectKey(const CUrlInfo& info)
+    {
+        if (info.sccs == SCCS_GIT)
+        {
+            // Use repo path + branch for Git
+            return info.gitRepoPath + L"|" + info.gitBranch;
+        }
+        // Use url for others
+        return info.url;
+    }
 };
 
 class CUrlInfos
@@ -104,6 +115,22 @@ public:
     std::map<std::wstring,CUrlInfo> *     GetWriteData();
     void                        ReleaseReadOnlyData();
     void                        ReleaseWriteData();
+
+    // Helper to add or update a project
+    void AddOrUpdate(const CUrlInfo& info)
+    {
+        std::wstring key = CUrlInfo::GetProjectKey(info);
+        infos[key] = info;
+    }
+    // Helper to find a project
+    CUrlInfo* Find(const CUrlInfo& info)
+    {
+        std::wstring key = CUrlInfo::GetProjectKey(info);
+        auto it = infos.find(key);
+        if (it != infos.end())
+            return &it->second;
+        return nullptr;
+    }
 
 protected:
     bool                        Save(FILE * hFile);

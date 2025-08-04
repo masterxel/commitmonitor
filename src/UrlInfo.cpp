@@ -678,29 +678,28 @@ bool CUrlInfos::Import(LPCWSTR filename, LPCWSTR password)
             info.password = plainPw;
         }
 
-        if (!infos.empty() && (infos.find(info.url) != infos.end()))
+        if (!infos.empty() && Find(info))
         {
-            CUrlInfo existingUrlInfo = infos.find(info.url)->second;
-            existingUrlInfo.username = info.username;
-            existingUrlInfo.url = info.url;
-            existingUrlInfo.name = info.name;
-            existingUrlInfo.ignoreUsers = info.ignoreUsers;
-            existingUrlInfo.includeUsers = info.includeUsers;
-            existingUrlInfo.ignoreCommitLog = info.ignoreCommitLog;
-            existingUrlInfo.callcommand = info.callcommand;
-            existingUrlInfo.webviewer = info.webviewer;
-            existingUrlInfo.minutesinterval = info.minutesinterval;
-            existingUrlInfo.minminutesinterval = info.minminutesinterval;
-            existingUrlInfo.disallowdiffs = info.disallowdiffs;
-            existingUrlInfo.maxentries = info.maxentries;
-            existingUrlInfo.noexecuteignored = info.noexecuteignored;
-            existingUrlInfo.monitored = info.monitored;
-            existingUrlInfo.useDefaultAuth = info.useDefaultAuth;
-
-            infos[existingUrlInfo.url] = existingUrlInfo;
+            CUrlInfo* existingUrlInfo = Find(info);
+            existingUrlInfo->username = info.username;
+            existingUrlInfo->url = info.url;
+            existingUrlInfo->name = info.name;
+            existingUrlInfo->ignoreUsers = info.ignoreUsers;
+            existingUrlInfo->includeUsers = info.includeUsers;
+            existingUrlInfo->ignoreCommitLog = info.ignoreCommitLog;
+            existingUrlInfo->callcommand = info.callcommand;
+            existingUrlInfo->webviewer = info.webviewer;
+            existingUrlInfo->minutesinterval = info.minutesinterval;
+            existingUrlInfo->minminutesinterval = info.minminutesinterval;
+            existingUrlInfo->disallowdiffs = info.disallowdiffs;
+            existingUrlInfo->maxentries = info.maxentries;
+            existingUrlInfo->noexecuteignored = info.noexecuteignored;
+            existingUrlInfo->monitored = info.monitored;
+            existingUrlInfo->useDefaultAuth = info.useDefaultAuth;
+            AddOrUpdate(*existingUrlInfo);
         }
         else
-            infos[info.url] = info;
+            AddOrUpdate(info);
     }
 
 

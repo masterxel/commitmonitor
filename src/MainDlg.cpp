@@ -1002,17 +1002,19 @@ LRESULT CMainDlg::DoCommand(int id)
                                 inf->errNr = 0;
                                 inf->error.clear();
                                 std::map<std::wstring,CUrlInfo> * pWrite = m_pURLInfos->GetWriteData();
-                                if (!inf->url.empty() && ((origurl.compare(inf->url)) || (id == ID_MAIN_EDIT)))
+                                std::wstring origKey = *(std::wstring*)itemex.lParam;
+                                std::wstring newKey = CUrlInfo::GetProjectKey(*inf);
+                                if (!inf->url.empty() && ((origKey.compare(newKey) != 0) || (id == ID_MAIN_EDIT)))
                                 {
                                     if (id == ID_MAIN_EDIT)
-                                        pWrite->erase(*(std::wstring*)itemex.lParam);
-                                    (*pWrite)[inf->url] = *inf;
+                                        pWrite->erase(origKey);
+                                    (*pWrite)[newKey] = *inf;
                                 }
                                 m_pURLInfos->Save(false);
                                 m_pURLInfos->ReleaseWriteData();
                                 SetWindowRedraw(m_hTreeControl, FALSE);
                                 TreeView_SelectItem(m_hTreeControl, NULL);
-                                RefreshURLTree(false, inf->url);
+                                RefreshURLTree(false, newKey);
                             }
                         }
                     }
@@ -1036,13 +1038,11 @@ LRESULT CMainDlg::DoCommand(int id)
                     if (!inf->url.empty())
                     {
                         std::map<std::wstring,CUrlInfo> * pWrite = m_pURLInfos->GetWriteData();
-                        if (!inf->url.empty())
-                        {
-                            (*pWrite)[inf->url] = *inf;
-                        }
+                        std::wstring key = CUrlInfo::GetProjectKey(*inf);
+                        (*pWrite)[key] = *inf;
                         m_pURLInfos->ReleaseWriteData();
                         m_pURLInfos->Save(false);
-                        RefreshURLTree(false, inf->url);
+                        RefreshURLTree(false, key);
                     }
                 }
                 else
@@ -1835,6 +1835,7 @@ void CMainDlg::OnSelectTreeItem(LPNMTREEVIEW lpNMTreeView)
     {
         ListView_DeleteAllItems(m_hListControl);
         SetWindowText(m_hLogMsgControl, _T(""));
+
         SetDlgItemText(*this, IDC_INFOLABEL, _T(""));
     }
     SetWindowText(m_hLogMsgControl, _T(""));
@@ -2460,7 +2461,7 @@ void CMainDlg::OnSelectListItem(LPNMLISTVIEW lpNMListView)
                 pLogEntry->read = true;
                 // refresh the name of the tree item to indicate the new
                 // number of unread log messages
-                // e.g. instead of 'TortoiseSVN (3)', show now 'TortoiseSVN (2)'
+                // e.g. instead of 'TortoiseSVN (2)', show now 'TortoiseSVN (3)'
                 if (pRead->find(*(std::wstring*)itemex.lParam) != pRead->end())
                 {
                     const CUrlInfo * uinfo = &pRead->find(*(std::wstring*)itemex.lParam)->second;
