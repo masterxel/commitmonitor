@@ -54,7 +54,7 @@ void CURLDlg::ClearForTemplate()
     info.lastchecked = 0;
     info.lastcheckedrev = 0;
     info.lastcheckedrobots = 0;
-
+    info.lastcheckedhash.clear();
 }
 
 void CURLDlg::SetSCCS(CUrlInfo::SCCS_TYPE sccs)
