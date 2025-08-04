@@ -111,7 +111,8 @@ LRESULT COptionsDlg::DlgFunc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPar
             SendDlgItemMessage(*this, IDC_SHOWPOPUPS, BM_SETCHECK, bShowPopups ? BST_CHECKED : BST_UNCHECKED, NULL);
 
             std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            if (tsvninstalled.empty())
+            std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+            if (tsvninstalled.empty() && tgitinstalled.empty())
                 DialogEnableWindow(IDC_USETSVN, FALSE);
             SetDlgItemText(*this, IDC_NUMLOGS, numBuf);
 

@@ -1067,7 +1067,8 @@ LRESULT CMainDlg::DoCommand(int id)
     case ID_MAIN_SHOWDIFFCHOOSE:
         {
             std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            bool bUseTSVN = !(tsvninstalled.empty());
+            std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+            bool bUseTSVN = !tsvninstalled.empty() || !tgitinstalled.empty();
             bUseTSVN = bUseTSVN && !!CRegStdDWORD(_T("Software\\CommitMonitor\\UseTSVN"), TRUE);
 
             ShowDiff(bUseTSVN);
@@ -3405,7 +3406,9 @@ void CMainDlg::OnContextMenu(WPARAM wParam, LPARAM lParam)
         {
             HMENU hMenu = NULL;
             std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            if (tsvninstalled.empty())
+            std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+            const bool noTortoise = tsvninstalled.empty() && tgitinstalled.empty();
+            if (noTortoise)
                 hMenu = ::LoadMenu(hResource, MAKEINTRESOURCE(IDR_LISTPOPUP));
             else
                 hMenu = ::LoadMenu(hResource, MAKEINTRESOURCE(IDR_LISTPOPUPTSVN));
@@ -3413,7 +3416,7 @@ void CMainDlg::OnContextMenu(WPARAM wParam, LPARAM lParam)
 
             UINT uItem = 0;
 
-            if ((!tsvninstalled.empty()) && (!DWORD(CRegStdDWORD(_T("Software\\CommitMonitor\\UseTSVN"), TRUE))))
+            if (!noTortoise && (!DWORD(CRegStdDWORD(_T("Software\\CommitMonitor\\UseTSVN"), TRUE))))
                 uItem = 1;
             // set the default entry
             MENUITEMINFO iinfo = {0};
