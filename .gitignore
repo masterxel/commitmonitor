@@ -35,3 +35,4 @@
 /ext/openssl/crypto/buildinf.h
 /src/Setup/VersionNumberInclude.wxi
 /.vscode/settings.json
+/src/*.aps
