@@ -594,6 +594,11 @@ bool CUrlInfos::Export(LPCWSTR filename, LPCWSTR password)
         iniFile.SetValue(it->first.c_str(), L"monitored", numberBuf);
         swprintf_s(numberBuf, _countof(numberBuf), L"%ld", it->second.useDefaultAuth);
         iniFile.SetValue(it->first.c_str(), L"useDefaultAuth", numberBuf);
+        swprintf_s(numberBuf, _countof(numberBuf), L"%ld", it->second.sccs);
+        iniFile.SetValue(it->first.c_str(), L"sccs", numberBuf);
+        iniFile.SetValue(it->first.c_str(), L"accurevRepo", it->second.accurevRepo.c_str());
+        iniFile.SetValue(it->first.c_str(), L"gitRepoPath", it->second.gitRepoPath.c_str());
+        iniFile.SetValue(it->first.c_str(), L"gitBranch", it->second.gitBranch.c_str());
 
         if (!it->second.password.empty())
         {
@@ -657,6 +662,10 @@ bool CUrlInfos::Import(LPCWSTR filename, LPCWSTR password)
         info.noexecuteignored = !!_wtol(iniFile.GetValue(*it, L"noexecuteignored", L""));
         info.monitored = !!_wtol(iniFile.GetValue(*it, L"monitored", L"1"));
         info.useDefaultAuth = !!_wtol(iniFile.GetValue(*it, L"useDefaultAuth", L"0"));
+        info.sccs = (CUrlInfo::SCCS_TYPE)_wtol(iniFile.GetValue(*it, L"sccs", L"0"));
+        info.accurevRepo = std::wstring(iniFile.GetValue(*it, L"accurevRepo", L""));
+        info.gitRepoPath = std::wstring(iniFile.GetValue(*it, L"gitRepoPath", L""));
+        info.gitBranch = std::wstring(iniFile.GetValue(*it, L"gitBranch", L""));
 
         std::wstring unencryptedPassword = std::wstring(iniFile.GetValue(*it, _T("password"), _T("")));
         if (!unencryptedPassword.empty())
@@ -682,6 +691,7 @@ bool CUrlInfos::Import(LPCWSTR filename, LPCWSTR password)
         {
             CUrlInfo* existingUrlInfo = Find(info);
             existingUrlInfo->username = info.username;
+            existingUrlInfo->password = info.password;
             existingUrlInfo->url = info.url;
             existingUrlInfo->name = info.name;
             existingUrlInfo->ignoreUsers = info.ignoreUsers;
@@ -696,6 +706,10 @@ bool CUrlInfos::Import(LPCWSTR filename, LPCWSTR password)
             existingUrlInfo->noexecuteignored = info.noexecuteignored;
             existingUrlInfo->monitored = info.monitored;
             existingUrlInfo->useDefaultAuth = info.useDefaultAuth;
+            existingUrlInfo->sccs = info.sccs;
+            existingUrlInfo->accurevRepo = info.accurevRepo;
+            existingUrlInfo->gitRepoPath = info.gitRepoPath;
+            existingUrlInfo->gitBranch = info.gitBranch;
             AddOrUpdate(*existingUrlInfo);
         }
         else
