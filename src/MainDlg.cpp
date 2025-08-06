@@ -1134,6 +1134,14 @@ LRESULT CMainDlg::DoCommand(int id)
             TreeView_GetItem(m_hTreeControl, &itemex);
             if (itemex.lParam != 0)
             {
+                // Get URL info to determine SCCS type
+                const std::map<std::wstring,CUrlInfo> * pRead = m_pURLInfos->GetReadOnlyData();
+                const CUrlInfo * pUrlInfo = nullptr;
+                if (pRead->find(*(std::wstring*)itemex.lParam) != pRead->end())
+                {
+                    pUrlInfo = &pRead->find(*(std::wstring*)itemex.lParam)->second;
+                }
+
                 std::wstring sClipboardData;
                 TCHAR tempBuf[1024];
                 LVITEM item = {0};
@@ -1150,10 +1158,21 @@ LRESULT CMainDlg::DoCommand(int id)
                         if (pLogEntry)
                         {
                             // get the info to put on the clipboard
-                            _stprintf_s(tempBuf, _countof(tempBuf), _T("Revision: %ld\nAuthor: %s\nDate: %s\nMessage:\n"),
-                                pLogEntry->revision,
-                                pLogEntry->author.c_str(),
-                                CAppUtils::ConvertDate(pLogEntry->date).c_str());
+                            // Use commit hash for Git, revision number for others
+                            if (pUrlInfo && pUrlInfo->sccs == CUrlInfo::SCCS_GIT)
+                            {
+                                _stprintf_s(tempBuf, _countof(tempBuf), _T("Revision: %s\nAuthor: %s\nDate: %s\nMessage:\n"),
+                                    pLogEntry->commitHash.c_str(),
+                                    pLogEntry->author.c_str(),
+                                    CAppUtils::ConvertDate(pLogEntry->date).c_str());
+                            }
+                            else
+                            {
+                                _stprintf_s(tempBuf, _countof(tempBuf), _T("Revision: %ld\nAuthor: %s\nDate: %s\nMessage:\n"),
+                                    pLogEntry->revision,
+                                    pLogEntry->author.c_str(),
+                                    CAppUtils::ConvertDate(pLogEntry->date).c_str());
+                            }
                             sClipboardData += tempBuf;
                             sClipboardData += pLogEntry->message;
                             sClipboardData += _T("\n-------------------------------\n");
@@ -1198,6 +1217,7 @@ LRESULT CMainDlg::DoCommand(int id)
                     }
                 }
                 CAppUtils::WriteAsciiStringToClipboard(sClipboardData, *this);
+                m_pURLInfos->ReleaseReadOnlyData();
             }
         }
         break;
