@@ -36,3 +36,4 @@
 /src/Setup/VersionNumberInclude.wxi
 /.vscode/settings.json
 /src/*.aps
+/ext/openssl/ms/nt.mak
