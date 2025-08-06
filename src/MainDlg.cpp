@@ -1301,7 +1301,7 @@ LRESULT CMainDlg::DoCommand(int id)
                     cmd += _T("\" /command:log /path:\"");
                     cmd += pUrlInfo->gitRepoPath;
                     cmd += _T("\"");
-                    cmd += _T(" /rev:");
+                    cmd += _T(" /endrev:");
                     cmd += pUrlInfo->gitBranch;
                     CAppUtils::LaunchApplication(cmd);
                 }

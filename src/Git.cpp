@@ -183,8 +183,8 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
         std::wstringstream remoteCmd;
         remoteCmd << L"git -C \"" << repoPath << L"\" rev-parse --abbrev-ref --symbolic-full-name " << branch << "@{u}";
         if (!RunGitCommand(remoteCmd.str(), remoteBranch)) {
-            // If there's no tracking branch, try origin/<branch>
-            remoteBranch = L"origin/" + branch;
+            // If there's no tracking branch, just use the branch as specified
+            remoteBranch = branch;
         }
         // Trim any whitespace or newlines
         while (!remoteBranch.empty() && (remoteBranch.back() == L'\n' || remoteBranch.back() == L'\r')) {
