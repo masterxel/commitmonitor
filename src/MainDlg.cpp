@@ -1230,18 +1230,46 @@ LRESULT CMainDlg::DoCommand(int id)
             TreeView_GetItem(m_hTreeControl, &itemex);
             std::wstring url = *(std::wstring*)itemex.lParam;
 
-            std::wstring cmd;
-            std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            if (!tsvninstalled.empty())
+            // Get URL info to determine SCCS type
+            const std::map<std::wstring,CUrlInfo> * pRead = m_pURLInfos->GetReadOnlyData();
+            const CUrlInfo * pUrlInfo = nullptr;
+            if (pRead->find(url) != pRead->end())
             {
-                // yes, we have TSVN installed
-                cmd = _T("\"");
-                cmd += tsvninstalled;
-                cmd += _T("\" /command:repobrowser /path:\"");
-                cmd += url;
-                cmd += _T("\"");
-                CAppUtils::LaunchApplication(cmd);
+                pUrlInfo = &pRead->find(url)->second;
             }
+
+            std::wstring cmd;
+            if (pUrlInfo && pUrlInfo->sccs == CUrlInfo::SCCS_GIT)
+            {
+                // Use TortoiseGit for Git repositories
+                std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+                if (!tgitinstalled.empty())
+                {
+                    cmd = _T("\"");
+                    cmd += tgitinstalled;
+                    cmd += _T("\" /command:repobrowser /path:\"");
+                    cmd += pUrlInfo->gitRepoPath;
+                    cmd += _T("\"");
+                    cmd += _T(" /rev:");
+                    cmd += pUrlInfo->gitBranch;
+                    CAppUtils::LaunchApplication(cmd);
+                }
+            }
+            else
+            {
+                // Use TortoiseSVN for SVN repositories
+                std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
+                if (!tsvninstalled.empty())
+                {
+                    cmd = _T("\"");
+                    cmd += tsvninstalled;
+                    cmd += _T("\" /command:repobrowser /path:\"");
+                    cmd += url;
+                    cmd += _T("\"");
+                    CAppUtils::LaunchApplication(cmd);
+                }
+            }
+            m_pURLInfos->ReleaseReadOnlyData();
         }
         break;
     case ID_POPUP_SHOWLOG:
@@ -1253,18 +1281,46 @@ LRESULT CMainDlg::DoCommand(int id)
             TreeView_GetItem(m_hTreeControl, &itemex);
             std::wstring url = *(std::wstring*)itemex.lParam;
 
-            std::wstring cmd;
-            std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            if (!tsvninstalled.empty())
+            // Get URL info to determine SCCS type
+            const std::map<std::wstring,CUrlInfo> * pRead = m_pURLInfos->GetReadOnlyData();
+            const CUrlInfo * pUrlInfo = nullptr;
+            if (pRead->find(url) != pRead->end())
             {
-                // yes, we have TSVN installed
-                cmd = _T("\"");
-                cmd += tsvninstalled;
-                cmd += _T("\" /command:log /path:\"");
-                cmd += url;
-                cmd += _T("\"");
-                CAppUtils::LaunchApplication(cmd);
+                pUrlInfo = &pRead->find(url)->second;
             }
+
+            std::wstring cmd;
+            if (pUrlInfo && pUrlInfo->sccs == CUrlInfo::SCCS_GIT)
+            {
+                // Use TortoiseGit for Git repositories
+                std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+                if (!tgitinstalled.empty())
+                {
+                    cmd = _T("\"");
+                    cmd += tgitinstalled;
+                    cmd += _T("\" /command:log /path:\"");
+                    cmd += pUrlInfo->gitRepoPath;
+                    cmd += _T("\"");
+                    cmd += _T(" /rev:");
+                    cmd += pUrlInfo->gitBranch;
+                    CAppUtils::LaunchApplication(cmd);
+                }
+            }
+            else
+            {
+                // Use TortoiseSVN for SVN repositories
+                std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
+                if (!tsvninstalled.empty())
+                {
+                    cmd = _T("\"");
+                    cmd += tsvninstalled;
+                    cmd += _T("\" /command:log /path:\"");
+                    cmd += url;
+                    cmd += _T("\"");
+                    CAppUtils::LaunchApplication(cmd);
+                }
+            }
+            m_pURLInfos->ReleaseReadOnlyData();
         }
         break;
     default:
@@ -3282,7 +3338,8 @@ void CMainDlg::OnContextMenu(WPARAM wParam, LPARAM lParam)
 
             HMENU hMenu = NULL;
             std::wstring tsvninstalled = CAppUtils::GetTSVNPath();
-            if (tsvninstalled.empty())
+            std::wstring tgitinstalled = CAppUtils::GetTortoiseGitPath();
+            if (tsvninstalled.empty() && tgitinstalled.empty())
                 hMenu = ::LoadMenu(hResource, MAKEINTRESOURCE(IDR_TREEPOPUP));
             else
                 hMenu = ::LoadMenu(hResource, MAKEINTRESOURCE(IDR_TREEPOPUPTSVN));
