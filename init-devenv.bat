@@ -1,5 +1,5 @@
 REM init Visual Studio
-REM CALL "%VS140COMNTOOLS%\vsvars32.bat"
+CALL "%VS140COMNTOOLS%\vsvars32.bat"
 
 REM init PATH
 set drivep=C:\Strawberry
