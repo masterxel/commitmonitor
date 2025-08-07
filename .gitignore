@@ -37,3 +37,5 @@
 /.vscode/settings.json
 /src/*.aps
 /ext/openssl/ms/nt.mak
+/version.build
+/src/version.h
