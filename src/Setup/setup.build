@@ -10,10 +10,10 @@
     <loadfile file="VersionNumberInclude.in.wxi" property="versionwixfile">
       <filterchain>
         <replacetokens begintoken="$" endtoken="$">
-          <token key="MajorVersion" value="1" />
-          <token key="MinorVersion" value="11" />
-          <token key="MicroVersion" value="2" />
-          <token key="WCREV" value="1123" />
+          <token key="MajorVersion" value="${environment::get-variable('MajorVersion')}" />
+          <token key="MinorVersion" value="${environment::get-variable('MinorVersion')}" />
+          <token key="MicroVersion" value="${environment::get-variable('Microversion')}" />
+          <token key="WCREV" value="${environment::get-variable('WCREV')}" />
         </replacetokens>
       </filterchain>
     </loadfile>
@@ -21,7 +21,7 @@
   </target>
 
   <target name="setup" depends="versioninfo">
-    <property name="verstring" value="1.11.2.1123" />
+    <property name="verstring" value="${environment::get-variable('MajorVersion')}.${environment::get-variable('MinorVersion')}.${environment::get-variable('MicroVersion')}.${environment::get-variable('WCREV')}" />
     <property name="msifilename" value="CommitMonitor${bindirextension}-${verstring}" />
     <!-- copy the exe to CommitMonitor_portable.exe -->
     <copy file="..\..\bin\${configuration}_${platform}\CommitMonitor.exe" tofile="..\..\bin\${configuration}_${platform}\CommitMonitor${bindirextension}-${verstring}_portable.exe" overwrite="true" />

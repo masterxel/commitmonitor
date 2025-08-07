@@ -3,9 +3,9 @@
   <target name="setversioninfo">
     <setenv>
       <variable name="MajorVersion" value="1" />
-      <variable name="MinorVersion" value="11" />
-      <variable name="MicroVersion" value="2" />
-      <variable name="WCREV" value="$WCREV$" />
+      <variable name="MinorVersion" value="12" />
+      <variable name="MicroVersion" value="0" />
+      <variable name="WCREV" value="$WCLOGCOUNT$" />
       <variable name="WCDATE" value="$WCDATE$" />
     </setenv>
   </target>

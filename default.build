@@ -99,6 +99,24 @@
       Sets the version information as properties, env variables
       and sets up the different version specific files.
     </description>
+    <nant target="versioninfo">
+      <buildfiles>
+        <include name="versioninfo.build" />
+      </buildfiles>
+    </nant>
+    <loadfile file="src\version.in" property="versionheaderfile">
+      <filterchain>
+        <replacetokens begintoken="$" endtoken="$">
+          <token key="MajorVersion" value="${environment::get-variable('MajorVersion')}" />
+          <token key="MinorVersion" value="${environment::get-variable('MinorVersion')}" />
+          <token key="MicroVersion" value="${environment::get-variable('Microversion')}" />
+          <token key="WCREV" value="${environment::get-variable('WCREV')}" />
+          <token key="WCDATE" value="${environment::get-variable('WCDATE')}" />
+          <token key="DEVBUILD" value="${devrelease}" />
+        </replacetokens>
+      </filterchain>
+    </loadfile>
+    <echo file="src\version.h" message="${versionheaderfile}" />
   </target>
 
   <target name="Subversion" depends="VSNET,env,VersionInfo">
@@ -137,7 +155,7 @@
     </description>
     <exec program="msbuild.exe" >
       <arg value="${solutionname}" />
-      <arg value="/t:build" />
+      <arg value="/t:rebuild" />
       <arg value="/p:Configuration=${configuration}" />
       <arg value="/p:Platform=${platform}" />
       <arg value="/verbosity:minimal" />
