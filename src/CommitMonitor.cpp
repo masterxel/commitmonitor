@@ -51,6 +51,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
     UNREFERENCED_PARAMETER(nCmdShow);
 
+    CTraceToOutputDebugString::Instance().SetLogFile((CAppUtils::GetDataDir() + _T("\\commitmonitor.log")).c_str());
+
     SetDllDirectory(L"");
     ::OleInitialize(NULL);
 
