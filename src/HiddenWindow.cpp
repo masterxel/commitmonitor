@@ -1069,7 +1069,7 @@ DWORD CHiddenWindow::RunThread()
                             }
                         }
                     }
-                    if ((it->second.lastcheckedrobots + (60*60*24*2)) < currenttime)
+                    if (it->second.sccs != CUrlInfo::SCCS_GIT && (it->second.lastcheckedrobots + (60*60*24*2)) < currenttime)
                     {
                         std::wstring sRobotsURL = it->first;
                         sRobotsURL += _T("/svnrobots.txt");
