@@ -7,6 +7,14 @@
 #include <io.h>
 #include <apr_time.h>
 
+// Row separator for parsing git output (ASCII 0x1E)
+const wchar_t GIT_ROW_SEPARATOR = L'\x1E';
+const wchar_t* GIT_ROW_SEPARATOR_HEX = L"%x1E";
+
+// Field separator for parsing git output (Group Separator character)
+const wchar_t GIT_FIELD_SEPARATOR = L'\x1D';
+const wchar_t* GIT_FIELD_SEPARATOR_HEX = L"%x1D";
+
 Git::Git() {}
 Git::~Git() {}
 
@@ -198,10 +206,18 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
     RunGitCommand(fetchCmd.str(), output); // Ignore fetch errors
 
     // Now get the log from the remote tracking branch
+    std::wstring formatStr = 
+        L"CommitStart" + std::wstring(GIT_ROW_SEPARATOR_HEX) + 
+        L"%h" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%H" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%P" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%an" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%at" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%B" + std::wstring(GIT_ROW_SEPARATOR_HEX);
     cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off log " << remoteBranch 
         << L" --no-merges"
         << L" --first-parent"
-        << L" --pretty=format:\"CommitStart%x1E%h|%H|%P|%an|%at|%B%x1E\" -n " << maxCount;
+        << L" --pretty=format:\"" << formatStr << L"\" -n " << maxCount;
 
     std::wstring cmdOutput;
     if (!RunGitCommand(cmd.str(), cmdOutput)) {
@@ -210,12 +226,12 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
     }
 
     // Split output by commit separator (Record Separator control char)
-    const std::wstring separator = L"CommitStart\x1E";
+    const std::wstring separator = L"CommitStart" + std::wstring(1, GIT_ROW_SEPARATOR);
     size_t pos = 0;
     size_t nextPos;
     while ((nextPos = cmdOutput.find(separator, pos)) != std::wstring::npos) {
         // Extract commit data between separators
-        size_t endPos = cmdOutput.find(L"\x1E", nextPos + separator.length());
+        size_t endPos = cmdOutput.find(GIT_ROW_SEPARATOR, nextPos + separator.length());
         if (endPos == std::wstring::npos) break;
         
         std::wstring commitData = cmdOutput.substr(nextPos + separator.length(), 
@@ -226,12 +242,12 @@ bool Git::GetGitLog(const std::wstring& repoPath, const std::wstring& branch, st
         }
 
         SCCSLogEntry entry;
-        // Parse fields separated by |
+        // Parse fields separated by field separator (Group Separator control char)
         std::vector<std::wstring> fields;
         size_t fieldStart = 0;
         size_t fieldEnd;
         
-        while ((fieldEnd = commitData.find(L'|', fieldStart)) != std::wstring::npos) {
+        while ((fieldEnd = commitData.find(GIT_FIELD_SEPARATOR, fieldStart)) != std::wstring::npos) {
             fields.push_back(commitData.substr(fieldStart, fieldEnd - fieldStart));
             fieldStart = fieldEnd + 1;
         }
@@ -271,7 +287,14 @@ bool Git::GetGitDiff(const std::wstring& repoPath, const std::wstring& commitHas
 bool Git::GetCommit(const std::wstring& repoPath, const std::wstring& commitHash, SCCSLogEntry& entry) {
     std::wstringstream cmd;
     // Force UTF-8 output and disable path quoting
-    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format:\"%H|%P|%an|%at|%s\" --no-patch";
+    // Use Group Separator as field separator to avoid conflicts with commit message content
+    std::wstring formatStr = 
+        L"%H" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%P" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%an" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%at" + std::wstring(GIT_FIELD_SEPARATOR_HEX) + 
+        L"%s";
+    cmd << L"git -C \"" << repoPath << L"\" -c core.quotepath=off show " << commitHash << L" --pretty=format:\"" << formatStr << L"\" --no-patch";
     
     std::wstring output;
     if (!RunGitCommand(cmd.str(), output)) {
@@ -291,14 +314,14 @@ bool Git::GetCommit(const std::wstring& repoPath, const std::wstring& commitHash
             line.pop_back();
         }
         size_t pos = 0;
-        // Parse: %H|%P|%an|%at|%s
-        pos = line.find(L"|");
+        // Parse using Field Separator
+        pos = line.find(GIT_FIELD_SEPARATOR);
         entry.commitHash = line.substr(0, pos);
-        size_t pos2 = line.find(L"|", pos+1);
+        size_t pos2 = line.find(GIT_FIELD_SEPARATOR, pos+1);
         entry.parentHashes.push_back(line.substr(pos+1, pos2-pos-1));
-        size_t pos3 = line.find(L"|", pos2+1);
+        size_t pos3 = line.find(GIT_FIELD_SEPARATOR, pos2+1);
         entry.author = line.substr(pos2+1, pos3-pos2-1);
-        size_t pos4 = line.find(L"|", pos3+1);
+        size_t pos4 = line.find(GIT_FIELD_SEPARATOR, pos3+1);
         // Convert Unix timestamp to APR time (microseconds since epoch)
         apr_time_t unixTime = _wtoi64(line.substr(pos3+1, pos4-pos3-1).c_str());
         entry.date = unixTime * APR_TIME_C(1000000); // Convert seconds to microseconds
